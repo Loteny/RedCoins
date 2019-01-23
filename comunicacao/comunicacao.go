@@ -14,7 +14,7 @@ func Responde(w http.ResponseWriter, s int, r []byte) error {
 	w.Header().Set("Content-Type", "application/json")
 	_, err := w.Write(r)
 	if err != nil {
-		log.Printf("Erro na função resposta.Responde: %s", err)
+		log.Printf("comunicacao: Responde: %s", err)
 	}
 	return err
 }
@@ -23,4 +23,12 @@ func Responde(w http.ResponseWriter, s int, r []byte) error {
 // invoca a função Responde
 func RespondeSucesso(w http.ResponseWriter, r []byte) error {
 	return Responde(w, http.StatusOK, r)
+}
+
+// RealizaParseForm abstrai a realização da operação http.ParseForm
+func RealizaParseForm(r *http.Request) (err error) {
+	if err = r.ParseForm(); err != nil {
+		log.Printf("comunicacao: RealizaParseForm: %s", err)
+	}
+	return
 }
