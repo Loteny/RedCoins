@@ -19,6 +19,23 @@ func TestCria(t *testing.T) {
 	}
 }
 
+func TestCriaInternoPadrao(t *testing.T) {
+	err := errors.New("mensagem de teste de erro")
+	gerado := CriaInternoPadrao(err)
+
+	if gerado.Error() != err.Error() {
+		t.Errorf("Mensagens de erros diferentes.\nGerado: %v\nOriginal: %v",
+			gerado, err)
+	}
+	if !gerado.interno {
+		t.Error("Função criou erro externo ao invés de interno.")
+	}
+	if gerado.statusCode != 500 {
+		t.Errorf("Função gerou status code diferente de 500. Gerado: %v",
+			gerado.statusCode)
+	}
+}
+
 func TestError(t *testing.T) {
 	msg := "mensagem de teste de erro"
 	e := Erros{interno: true, statusCode: 200, msg: msg}

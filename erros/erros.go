@@ -9,6 +9,7 @@ package erros
 import (
 	"errors"
 	"log"
+	"net/http"
 )
 
 // Erros é a estrutura que deve ser usada como objeto que implementa a interface
@@ -30,9 +31,15 @@ type Erros struct {
 	statusCode int
 }
 
-// Cria gera uma nova struct Erros
+// Cria gera uma nova estrutura 'Erros'
 func Cria(interno bool, statusCode int, msg string) Erros {
 	return Erros{interno: interno, statusCode: statusCode, msg: msg}
+}
+
+// CriaInternoPadrao cria uma estrutura 'Erros' com interno = true, statusCode =
+// 500 e a mesma mensagem de erro que o erro passado
+func CriaInternoPadrao(err error) Erros {
+	return Erros{interno: true, statusCode: http.StatusInternalServerError, msg: err.Error()}
 }
 
 // Error é a função para a estrutura 'Erros' implementar a interface 'error'
