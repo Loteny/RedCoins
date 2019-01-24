@@ -63,5 +63,17 @@ func validaDadosCadastroRequestHTTP(r *http.Request) (dados dadosCadastrais, err
 // houver algum erro incorrigível com os dados, a função retorna o status code e
 // mensagem de erros apropriados.
 func validaDadosCadastro(dados *dadosCadastrais) (err error) {
+	if err := email(dados.email); err != nil {
+		return err
+	}
+	if err := senha(dados.senha); err != nil {
+		return err
+	}
+	if err := nome(dados.nome); err != nil {
+		return err
+	}
+	if err := nascimento(dados.nascimento); err != nil {
+		return err
+	}
 	return
 }
