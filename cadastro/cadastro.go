@@ -31,7 +31,11 @@ type dadosCadastrais struct {
 // CadastraHTTPS realiza o cadastro de um usuário a partir de um request HTTPS
 func CadastraHTTPS(w http.ResponseWriter, r *http.Request) {
 	if _, err := validaDadosCadastroRequestHTTP(r); err != nil {
-		_, status, _ := err.(erros.Erros).Abre()
+		interno, status, erroNativo := err.(erros.Erros).Abre()
+		if !interno {
+			comunicacao.RespondeErro(w, status, erroNativo)
+			return
+		}
 		comunicacao.Responde(w, status, []byte{})
 		return
 	}
