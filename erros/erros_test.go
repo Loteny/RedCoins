@@ -8,6 +8,17 @@ import (
 	"testing"
 )
 
+func TestCria(t *testing.T) {
+	msg := "mensagem de teste de erro"
+	original := Erros{interno: true, statusCode: 200, msg: msg}
+	gerado := Cria(true, 200, msg)
+
+	if original != gerado {
+		t.Errorf("Estruturas diferentes.\nGerado: %#v\nOriginal: %#v",
+			gerado, original)
+	}
+}
+
 func TestError(t *testing.T) {
 	msg := "mensagem de teste de erro"
 	e := Erros{interno: true, statusCode: 200, msg: msg}

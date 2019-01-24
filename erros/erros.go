@@ -30,6 +30,11 @@ type Erros struct {
 	statusCode int
 }
 
+// Cria gera uma nova struct Erros
+func Cria(interno bool, statusCode int, msg string) Erros {
+	return Erros{interno: interno, statusCode: statusCode, msg: msg}
+}
+
 // Error é a função para a estrutura 'Erros' implementar a interface 'error'
 func (e Erros) Error() string {
 	return e.msg
