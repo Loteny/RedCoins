@@ -46,3 +46,25 @@ func TestNome(t *testing.T) {
 		t.Errorf("Erro retornado: %v", err)
 	}
 }
+
+func TestNascimento(t *testing.T) {
+	// Formatação incorreta
+	if err := nascimento(""); err != ErrNascimentoInvalido {
+		t.Errorf("Erro retornado: %v", err)
+	}
+	if err := nascimento("9231-332"); err != ErrNascimentoInvalido {
+		t.Errorf("Erro retornado: %v", err)
+	}
+	// Datas absurdas (30 de fevereiro)
+	if err := nascimento("2018-02-30"); err != ErrNascimentoInvalido {
+		t.Errorf("Erro retornado: %v", err)
+	}
+	// Datas futuras
+	if err := nascimento("5012-01-25"); err != ErrNascimentoInvalido {
+		t.Errorf("Erro retornado: %v", err)
+	}
+	// Datas passadas
+	if err := nascimento("2015-03-07"); err != nil {
+		t.Errorf("Erro retornado: %v", err)
+	}
+}

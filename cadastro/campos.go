@@ -2,6 +2,7 @@ package cadastro
 
 import (
 	"regexp"
+	"time"
 
 	"github.com/loteny/redcoins/erros"
 )
@@ -19,6 +20,25 @@ func senha(senha string) error {
 // nome verifica se o campo não está vazio
 func nome(nome string) error {
 	return validacaoMatchSimples(nome, "^.{6,64}$", ErrNomeInvalido)
+}
+
+// nascimento verifica se a data está no formato válido e se a data é passada.
+// Problemas com fuso horário não são importantes, visto que só seriam
+// possivelmente bloqueados datas de nascimentos de recém-nascidos por problemas
+// de fuso horário. Além disso, o 'Time' resultante da data de entrada estará no
+// início do dia (00h00m00...), portanto, há uma "margem de erro" nessa função,
+// mas essa margem é pequena (algumas horas, possivelmente alguns dias,
+// dependendo de mudanças específicas de fusos horários) e pode ser ignorada
+func nascimento(data string) error {
+	dataTime, err := time.Parse("2006-01-02", data)
+	if err != nil {
+		return ErrNascimentoInvalido
+	}
+	agora := time.Now()
+	if dataTime.After(agora) {
+		return ErrNascimentoInvalido
+	}
+	return nil
 }
 
 // validacaoMatchSimples executa uma validação básica com um regex passado como

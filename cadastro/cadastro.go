@@ -13,10 +13,11 @@ import (
 
 // Lista de possíveis erros do módulo
 var (
-	ErrMetodoPost    = erros.Cria(false, 405, "")
-	ErrEmailInvalido = erros.Cria(false, 400, "email invalido")
-	ErrSenhaInvalida = erros.Cria(false, 400, "senha invalida")
-	ErrNomeInvalido  = erros.Cria(false, 400, "nome invalido")
+	ErrMetodoPost         = erros.Cria(false, 405, "")
+	ErrEmailInvalido      = erros.Cria(false, 400, "email invalido")
+	ErrSenhaInvalida      = erros.Cria(false, 400, "senha invalida")
+	ErrNomeInvalido       = erros.Cria(false, 400, "nome invalido")
+	ErrNascimentoInvalido = erros.Cria(false, 400, "nascimento invalido")
 )
 
 // Estrutura que contém todos os dados cadastrais de um usuário
