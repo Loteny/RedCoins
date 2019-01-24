@@ -15,6 +15,7 @@ import (
 var (
 	ErrMetodoPost    = erros.Cria(false, 405, "")
 	ErrEmailInvalido = erros.Cria(false, 400, "email invalido")
+	ErrSenhaInvalida = erros.Cria(false, 400, "senha invalida")
 )
 
 // Estrutura que contém todos os dados cadastrais de um usuário
