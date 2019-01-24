@@ -6,38 +6,32 @@ import (
 )
 
 func TestEmailValido(t *testing.T) {
-	err := email("teste@gmail.com")
-	if err != nil {
+	if err := email("teste@gmail.com"); err != nil {
 		t.Errorf("Erro retornado: %v", err)
 	}
 }
 
 func TestEmailInvalido(t *testing.T) {
-	err := email("emailinvalido.com")
-	if err != ErrEmailInvalido {
+	if err := email("emailinvalido.com"); err != ErrEmailInvalido {
 		t.Errorf("Erro retornado: %v", err)
 	}
 }
 
 func TestSenha(t *testing.T) {
 	// Número abaixo do mínimo de caracteres
-	err := senha("abc")
-	if err != ErrSenhaInvalida {
+	if err := senha("abc"); err != ErrSenhaInvalida {
 		t.Errorf("Erro retornado: %v", err)
 	}
 	// Número mínimo de caracteres
-	err = senha("abcdef")
-	if err != nil {
+	if err := senha("abcdef"); err != nil {
 		t.Errorf("Erro retornado: %v", err)
 	}
 	// Número normal de caracteres
-	err = senha("abcdefgh")
-	if err != nil {
+	if err := senha("abcdefgh"); err != nil {
 		t.Errorf("Erro retornado: %v", err)
 	}
 	// Número acima do máximo de caracteres
-	err = senha(strings.Repeat("a", 65))
-	if err != ErrSenhaInvalida {
+	if err := senha(strings.Repeat("a", 65)); err != ErrSenhaInvalida {
 		t.Errorf("Erro retornado: %v", err)
 	}
 }
