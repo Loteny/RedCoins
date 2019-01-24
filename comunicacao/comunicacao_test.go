@@ -2,6 +2,7 @@ package comunicacao
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -82,6 +83,36 @@ func TestRespondeSucesso(t *testing.T) {
 
 	// Checa o corpo da mensagem
 	esperado := `{"Funcionando":"sim"}`
+	if recorder.Body.String() != esperado {
+		t.Errorf("Corpo da mensagem incorreto.\nAdquirido: %v\nDesejado: %v",
+			recorder.Body.String(), esperado)
+	}
+}
+
+func TestRespondeErro(t *testing.T) {
+	// Criação do request HTTP
+	request, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Recorder para armazenar a resposta
+	recorder := httptest.NewRecorder()
+
+	// Upload do servidor de teste
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		RespondeErro(w, http.StatusBadRequest, errors.New("erro teste"))
+	})
+	handler.ServeHTTP(recorder, request)
+
+	// Checa os status code
+	if status := recorder.Code; status != http.StatusBadRequest {
+		t.Errorf("Status code incorreto (adquirido %v, esperado %v).",
+			status, http.StatusBadRequest)
+	}
+
+	// Checa o corpo da mensagem
+	esperado := `{"erro":"erro teste"}`
 	if recorder.Body.String() != esperado {
 		t.Errorf("Corpo da mensagem incorreto.\nAdquirido: %v\nDesejado: %v",
 			recorder.Body.String(), esperado)

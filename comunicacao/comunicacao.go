@@ -3,6 +3,7 @@
 package comunicacao
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 )
@@ -23,6 +24,14 @@ func Responde(w http.ResponseWriter, s int, r []byte) error {
 // invoca a função Responde
 func RespondeSucesso(w http.ResponseWriter, r []byte) error {
 	return Responde(w, http.StatusOK, r)
+}
+
+// RespondeErro envia a mensagem de erro passada para função em JSON
+func RespondeErro(w http.ResponseWriter, statusCode int, e error) error {
+	m := make(map[string]string)
+	m["erro"] = e.Error()
+	msg, _ := json.Marshal(m)
+	return Responde(w, statusCode, msg)
 }
 
 // RealizaParseForm abstrai a realização da operação http.ParseForm
