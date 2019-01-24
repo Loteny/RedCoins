@@ -16,6 +16,11 @@ func senha(senha string) error {
 	return validacaoMatchSimples(senha, "^.{6,64}$", ErrSenhaInvalida)
 }
 
+// nome verifica se o campo não está vazio
+func nome(nome string) error {
+	return validacaoMatchSimples(nome, "^.{6,64}$", ErrNomeInvalido)
+}
+
 // validacaoMatchSimples executa uma validação básica com um regex passado como
 // argumento. Retorna o erro gerado pela função do regex, caso houve algum, ou o
 // erro passado por argumento para essa função no caso de o regex não bater com

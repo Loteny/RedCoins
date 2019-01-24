@@ -41,3 +41,14 @@ func TestSenha(t *testing.T) {
 		t.Errorf("Erro retornado: %v", err)
 	}
 }
+
+func TestNome(t *testing.T) {
+	// Nome vazio
+	if err := nome(""); err != ErrNomeInvalido {
+		t.Errorf("Erro retornado: %v", err)
+	}
+	// Nome válido
+	if err := nome("Ronnie James Dio"); err != nil {
+		t.Errorf("Erro retornado: %v", err)
+	}
+}
