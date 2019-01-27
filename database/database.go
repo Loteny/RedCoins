@@ -41,14 +41,14 @@ func CriaTabelas() error {
 // criaTabelaUsuario cria a tabela 'usuarios' no banco de dados que armazena
 // os dados cadastrais dos usuários
 func criaTabelaUsuario(db *sql.DB) error {
-	sql := `CREATE TABLE usuarios (
+	sqlCode := `CREATE TABLE usuarios (
 		id INT(11) AUTO_INCREMENT,
 		email VARCHAR(128) NOT NULL,
 		nome VARCHAR(255) NOT NULL,
 		nascimento DATE NOT NULL,
 		CONSTRAINT pk_usuarios_id PRIMARY KEY (id)
-	);`
-	if _, err := db.Exec(sql); err != nil {
+	) ENGINE=InnoDB;`
+	if _, err := db.Exec(sqlCode); err != nil {
 		return err
 	}
 	return nil
