@@ -3,6 +3,7 @@ package cadastro
 import (
 	"regexp"
 	"time"
+	"unicode/utf8"
 
 	"github.com/loteny/redcoins/erros"
 )
@@ -17,9 +18,12 @@ func senha(senha string) error {
 	return validacaoMatchSimples(senha, "^.{6,64}$", ErrSenhaInvalida)
 }
 
-// nome verifica se o campo não está vazio
+// nome verifica se o campo não está vazio e se não excede 128 caracteres
 func nome(nome string) error {
-	return validacaoMatchSimples(nome, "^.{6,64}$", ErrNomeInvalido)
+	if utf8.RuneCountInString(nome) <= 0 || utf8.RuneCountInString(nome) > 128 {
+		return ErrNomeInvalido
+	}
+	return nil
 }
 
 // nascimento verifica se a data está no formato válido e se a data é passada.
