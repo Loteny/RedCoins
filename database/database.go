@@ -130,6 +130,12 @@ func criaTabelaUsuario(db *sql.DB) error {
 	if _, err := db.Exec(sqlCode); err != nil {
 		return err
 	}
+	// Adiciona uma index no e-mail do usuário para otimizar pesquisas
+	sqlCode = `ALTER TABLE usuario
+		ADD INDEX idx_usuario_email (email);`
+	if _, err := db.Exec(sqlCode); err != nil {
+		return err
+	}
 	return nil
 }
 
