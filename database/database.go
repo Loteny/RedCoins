@@ -119,12 +119,13 @@ func AdquireSenhaEHash(email string) (string, string, error) {
 // os dados cadastrais dos usuários
 func criaTabelaUsuario(db *sql.DB) error {
 	sqlCode := `CREATE TABLE usuarios (
-		email VARCHAR(128),
+		id INT(11) UNSIGNED AUTO_INCREMENT,
+		email VARCHAR(128) UNIQUE NOT NULL,
 		senha VARCHAR(64) NOT NULL,
 		senha_hash CHAR(32) NOT NULL,
 		nome VARCHAR(255) NOT NULL,
 		nascimento DATE NOT NULL,
-		CONSTRAINT pk_usuarios_email PRIMARY KEY (email)
+		CONSTRAINT pk_usuarios_id PRIMARY KEY (id)
 	) ENGINE=InnoDB;`
 	if _, err := db.Exec(sqlCode); err != nil {
 		return err
