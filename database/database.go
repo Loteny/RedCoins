@@ -27,6 +27,7 @@ var (
 // Erros possíveis do módulo
 var (
 	ErrUsuarioDuplicado = errors.New("E-mail já cadastrado")
+	ErrUsuarioNaoExiste = errors.New("Usuário não existente")
 )
 
 // Usuario é a estrutura para a tabela 'usuario'
@@ -87,6 +88,31 @@ func InsereUsuario(usr *Usuario) error {
 		return err
 	}
 	return nil
+}
+
+// AdquireSenhaEHash retorna a senha e o hash usado na senha de um usuário a
+// partir de seu email. Se o usuário não existe, retorna ErrUsuarioNaoExiste.
+func AdquireSenhaEHash(email string) (string, string, error) {
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return "", "", err
+	}
+
+	var senha, hash string
+	// Adquire os dados do banco de dados
+	sqlCode := `SELECT senha, senha_hash
+		FROM usuarios
+		WHERE email=?;`
+	row := db.QueryRow(sqlCode, email)
+	err = row.Scan(&senha, &hash)
+	// Se o usuário não existe, retorna ErrUsuarioNaoExiste
+	if err == sql.ErrNoRows {
+		return "", "", ErrUsuarioNaoExiste
+	} else if err != nil {
+		return "", "", err
+	}
+
+	return senha, hash, nil
 }
 
 // criaTabelaUsuario cria a tabela 'usuarios' no banco de dados que armazena

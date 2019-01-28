@@ -153,3 +153,25 @@ func TestInsereUsuario(t *testing.T) {
 		t.Fatalf("Erro inesperado ao inserir usuário duplicado: %v", err)
 	}
 }
+
+func TestAdquireSenhaEHash(t *testing.T) {
+	// Altera o banco de dados usado pelo módulo para usar o de testes
+	backupDsn := dsn
+	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
+	defer func() { dsn = backupDsn }()
+
+	// Usuário existente
+	senha, hash, err := AdquireSenhaEHash("teste@gmail.com")
+	if err != nil {
+		t.Fatalf("Erro inesperado ao adquirir senha/hash: %v", err)
+	}
+	if senha != "123456" || hash != "hash_teste" {
+		t.Errorf("Dados retornados incorretamente.\nSenha: %v\nHash: %v", senha, hash)
+	}
+
+	// Usuário não existente
+	senha, hash, err = AdquireSenhaEHash("naoexistente@gmail.com")
+	if err != ErrUsuarioNaoExiste {
+		t.Errorf("Retorno inesperado para usuário inexistente.\nSenha: %v\nHash: %v\nErro: %v", senha, hash, err)
+	}
+}
