@@ -147,4 +147,9 @@ func TestInsereUsuario(t *testing.T) {
 	if usrResposta != usr {
 		t.Fatalf("Usuário inserido incorretamente.\nOriginal: %v\nAdquirido: %v", usr, usrResposta)
 	}
+
+	// Verifica se o código corretamente retorna o erro adequado ao cadastrar um usuário repetido
+	if err := InsereUsuario(&usr); err != ErrUsuarioDuplicado {
+		t.Fatalf("Erro inesperado ao inserir usuário duplicado: %v", err)
+	}
 }
