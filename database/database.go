@@ -53,7 +53,7 @@ func CriaTabelas() error {
 	return nil
 }
 
-// InsereUsuario cria uma nova linha na tabela 'usuarios'. Retorna
+// InsereUsuario cria uma nova linha na tabela 'usuario'. Retorna
 // ErrUsuarioDuplicado se o usuário é repetido (mesmo e-mail)
 func InsereUsuario(usr *Usuario) error {
 	db, err := sql.Open("mysql", dsn)
@@ -71,7 +71,7 @@ func InsereUsuario(usr *Usuario) error {
 	}
 
 	// Insere usuário no banco de dados
-	sqlCode := `INSERT INTO usuarios
+	sqlCode := `INSERT INTO usuario
 		(email, senha, senha_hash, nome, nascimento)
 		VALUES (?, ?, ?, ?, ?);`
 	if _, err := db.Exec(
@@ -101,7 +101,7 @@ func AdquireSenhaEHash(email string) (string, string, error) {
 	var senha, hash string
 	// Adquire os dados do banco de dados
 	sqlCode := `SELECT senha, senha_hash
-		FROM usuarios
+		FROM usuario
 		WHERE email=?;`
 	row := db.QueryRow(sqlCode, email)
 	err = row.Scan(&senha, &hash)
@@ -115,17 +115,17 @@ func AdquireSenhaEHash(email string) (string, string, error) {
 	return senha, hash, nil
 }
 
-// criaTabelaUsuario cria a tabela 'usuarios' no banco de dados que armazena
+// criaTabelaUsuario cria a tabela 'usuario' no banco de dados que armazena
 // os dados cadastrais dos usuários
 func criaTabelaUsuario(db *sql.DB) error {
-	sqlCode := `CREATE TABLE usuarios (
+	sqlCode := `CREATE TABLE usuario (
 		id INT(11) UNSIGNED AUTO_INCREMENT,
 		email VARCHAR(128) UNIQUE NOT NULL,
 		senha VARCHAR(64) NOT NULL,
 		senha_hash CHAR(32) NOT NULL,
 		nome VARCHAR(255) NOT NULL,
 		nascimento DATE NOT NULL,
-		CONSTRAINT pk_usuarios_id PRIMARY KEY (id)
+		CONSTRAINT pk_usuario_id PRIMARY KEY (id)
 	) ENGINE=InnoDB;`
 	if _, err := db.Exec(sqlCode); err != nil {
 		return err
@@ -137,7 +137,7 @@ func criaTabelaUsuario(db *sql.DB) error {
 // com o e-mail passado. Se existe, retorna ErrUsuarioDuplicado. Se não existe,
 // retorna nil.
 func verificaUsuarioDuplicado(db *sql.DB, email string) error {
-	sqlCode := `SELECT COUNT(*) FROM usuarios WHERE email=?;`
+	sqlCode := `SELECT COUNT(*) FROM usuario WHERE email=?;`
 	row := db.QueryRow(sqlCode, email)
 	var rowQtd int
 	if err := row.Scan(&rowQtd); err != nil {

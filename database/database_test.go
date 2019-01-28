@@ -18,7 +18,7 @@ func TestCriaTabelas(t *testing.T) {
 	defer func() { dsn = backupDsn }()
 
 	// Lista todas as tabelas a serem criadas
-	tabelas := [1]string{"usuarios"}
+	tabelas := [1]string{"usuario"}
 
 	// Deleta as tabelas se existem
 	db, err := sql.Open("mysql", dsn)
@@ -71,7 +71,7 @@ func TestCriaTabelaUsuario(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Erro ao abrir o banco de dados: %v", err)
 	}
-	sqlCode := `DROP TABLE IF EXISTS usuarios;`
+	sqlCode := `DROP TABLE IF EXISTS usuario;`
 	if _, err := db.Exec(sqlCode); err != nil {
 		t.Fatalf("Erro inesperado ao deletar tabela: %v", err)
 	}
@@ -88,7 +88,7 @@ func TestCriaTabelaUsuario(t *testing.T) {
 			TABLE_SCHEMA = ? AND
 			TABLE_NAME = ?;`
 	var qtdTabelas int
-	rows := db.QueryRow(sqlCode, testDbNome, "usuarios")
+	rows := db.QueryRow(sqlCode, testDbNome, "usuario")
 	if err := rows.Scan(&qtdTabelas); err != nil {
 		if err == sql.ErrNoRows {
 			t.Errorf("Tabela não foi criada.")
@@ -121,7 +121,7 @@ func TestInsereUsuario(t *testing.T) {
 	}
 
 	// Limpa a tabela de usuários se existir
-	sqlCode := `TRUNCATE usuarios;`
+	sqlCode := `TRUNCATE usuario;`
 	if _, err := db.Exec(sqlCode); err != nil {
 		t.Fatalf("Erro inesperado ao limpar tabela: %v", err)
 	}
@@ -132,7 +132,7 @@ func TestInsereUsuario(t *testing.T) {
 
 	// Verifica se o usuário foi inserido corretamente
 	sqlCode = `SELECT email, senha, senha_hash, nome, nascimento
-		FROM usuarios
+		FROM usuario
 		WHERE email=?;`
 	row := db.QueryRow(sqlCode, usr.email)
 	usrResposta := Usuario{}
