@@ -42,11 +42,12 @@ func CriaTabelas() error {
 // os dados cadastrais dos usuários
 func criaTabelaUsuario(db *sql.DB) error {
 	sqlCode := `CREATE TABLE usuarios (
-		id INT(11) AUTO_INCREMENT,
-		email VARCHAR(128) NOT NULL,
+		email VARCHAR(128),
+		senha VARCHAR(64) NOT NULL,
+		senha_hash CHAR(32) NOT NULL,
 		nome VARCHAR(255) NOT NULL,
 		nascimento DATE NOT NULL,
-		CONSTRAINT pk_usuarios_id PRIMARY KEY (id)
+		CONSTRAINT pk_usuarios_email PRIMARY KEY (email)
 	) ENGINE=InnoDB;`
 	if _, err := db.Exec(sqlCode); err != nil {
 		return err
