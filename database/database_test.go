@@ -14,7 +14,7 @@ var testDbNome = "redcoins_teste"
 func TestCriaTabelas(t *testing.T) {
 	// Altera o banco de dados usado pelo módulo para usar o de testes
 	backupDsn := dsn
-	dsn = usuario + ":" + senha + "@tcp(" + endereco + ")/" + testDbNome
+	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
 	defer func() { dsn = backupDsn }()
 
 	// Lista todas as tabelas a serem criadas
@@ -63,7 +63,7 @@ func TestCriaTabelas(t *testing.T) {
 func TestCriaTabelaUsuario(t *testing.T) {
 	// Altera o banco de dados usado pelo módulo para usar o de testes
 	backupDsn := dsn
-	dsn = usuario + ":" + senha + "@tcp(" + endereco + ")/" + testDbNome
+	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
 	defer func() { dsn = backupDsn }()
 
 	// Deleta a tabela se existir
@@ -99,5 +99,52 @@ func TestCriaTabelaUsuario(t *testing.T) {
 	if qtdTabelas != 1 {
 		t.Errorf("Quantidade inesperada de tabelas: %v (deveria ser 1)",
 			qtdTabelas)
+	}
+}
+
+func TestInsereUsuario(t *testing.T) {
+	usr := Usuario{
+		email:      "teste@gmail.com",
+		senha:      "123456",
+		senhaHash:  "hash_teste",
+		nascimento: "1942-07-10",
+		nome:       "Ronnie James Dio",
+	}
+
+	// Altera o banco de dados usado pelo módulo para usar o de testes
+	backupDsn := dsn
+	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
+	defer func() { dsn = backupDsn }()
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		t.Fatalf("Erro ao abrir o banco de dados: %v", err)
+	}
+
+	// Limpa a tabela de usuários se existir
+	sqlCode := `TRUNCATE usuarios;`
+	if _, err := db.Exec(sqlCode); err != nil {
+		t.Fatalf("Erro inesperado ao limpar tabela: %v", err)
+	}
+
+	if err := InsereUsuario(&usr); err != nil {
+		t.Fatalf("Erro ao inserir dado no banco de dados: %v", err)
+	}
+
+	// Verifica se o usuário foi inserido corretamente
+	sqlCode = `SELECT email, senha, senha_hash, nome, nascimento
+		FROM usuarios
+		WHERE email=?;`
+	row := db.QueryRow(sqlCode, usr.email)
+	usrResposta := Usuario{}
+	if err := row.Scan(
+		&usrResposta.email,
+		&usrResposta.senha,
+		&usrResposta.senhaHash,
+		&usrResposta.nome,
+		&usrResposta.nascimento); err != nil {
+		t.Fatalf("Erro ao adquirir a linha de usuário: %v", err)
+	}
+	if usrResposta != usr {
+		t.Fatalf("Usuário inserido incorretamente.\nOriginal: %v\nAdquirido: %v", usr, usrResposta)
 	}
 }
