@@ -15,85 +15,31 @@ func TestRealizaCadastroRequestHTTP(t *testing.T) {
 	form.Set("senha", "123456")
 	form.Set("nome", "Ronnie James Dio")
 	form.Set("nascimento", "1942-07-10")
-	testComunicacaoHTTPPostForm(t, form, RealizaCadastroRequestHTTP, http.StatusOK, ``)
+	// Função que vai chamar a função a ser testada e tratar seu retorno
+	rotaHTTP := func(w http.ResponseWriter, r *http.Request) {
+		err := RealizaCadastroRequestHTTP(r)
+		if err != nil {
+			t.Errorf("Erro inesperado no cadastro: %v", err)
+		}
+	}
+	testRealizaRequestHTTPPostForm(t, form, rotaHTTP)
 
 	// Nascimento inválido
 	form.Set("nascimento", "194207-10")
-	testComunicacaoHTTPPostForm(t, form, RealizaCadastroRequestHTTP, http.StatusBadRequest,
-		`{"erro":"nascimento invalido"}`)
+	// Função que vai chamar a função a ser testada e tratar seu retorno
+	rotaHTTP = func(w http.ResponseWriter, r *http.Request) {
+		err := RealizaCadastroRequestHTTP(r)
+		if err != ErrNascimentoInvalido {
+			t.Errorf("Erro inesperado no cadastro: %v", err)
+		}
+	}
+	testRealizaRequestHTTPPostForm(t, form, rotaHTTP)
 }
 
-func TestValidaDadosCadastroRequestHTTP(t *testing.T) {
-	// Formulário válido
-	form := url.Values{}
-	form.Set("email", "teste@gmail.com")
-	form.Set("senha", "123456")
-	form.Set("nome", "Ronnie James Dio")
-	form.Set("nascimento", "1942-07-10")
-	// Resolução dos dados de teste
-	resolucaoDados := func(dados dadosCadastrais, err error) {
-
-	}
-	// Interface HTTP para testes
-	recepcaoTeste := func(w http.ResponseWriter, r *http.Request) {
-		dados, err := validaDadosCadastroRequestHTTP(r)
-		resolucaoDados(dados, err)
-	}
-	testRealizaRequestHTTPPostForm(t, form, recepcaoTeste)
-
-	// Nascimento inválido
-	form.Set("nascimento", "194207-10")
-	// Resolução dos dados de teste
-	resolucaoDados = func(dados dadosCadastrais, err error) {
-		//
-	}
-	// Interface HTTP para testes
-	recepcaoTeste = func(w http.ResponseWriter, r *http.Request) {
-		dados, err := validaDadosCadastroRequestHTTP(r)
-		resolucaoDados(dados, err)
-	}
-	testRealizaRequestHTTPPostForm(t, form, recepcaoTeste)
-}
-
-func TestValidaDadosCadastro(t *testing.T) {
-	// Dados válidos
-	dados := dadosCadastrais{
-		email:      "teste@gmail.com",
-		senha:      "123456",
-		nome:       "Ronnie James Dio",
-		nascimento: "1942-07-10",
-	}
-	err := validaDadosCadastro(&dados)
-	if err != nil {
-		t.Errorf("Erro: %v", err)
-	}
-}
-
-// testComunicacaoHTTPPostForm é uma função auxiliar para geração e tratamento
-// de requests HTTP com formulário POST
-func testComunicacaoHTTPPostForm(t *testing.T, form url.Values,
-	f func(*http.Request),
-	statusCodeEsperado int, respostaEsperada string) {
-
-	recorder := testRealizaRequestHTTPPostForm(t, form, f)
-
-	// Checa os status code
-	if status := recorder.Code; status != statusCodeEsperado {
-		t.Errorf("Status code incorreto (adquirido %v, esperado %v).",
-			status, statusCodeEsperado)
-	}
-
-	// Checa o corpo da mensagem
-	if recorder.Body.String() != respostaEsperada {
-		t.Errorf("Corpo da mensagem incorreto.\nAdquirido: %v\nDesejado: %v",
-			recorder.Body.String(), respostaEsperada)
-	}
-}
-
-// testComunicacaoHTTPPostForm é uma função auxiliar para geração de requests
+// testRealizaRequestHTTPPostForm é uma função auxiliar para geração de requests
 // HTTP com formulário POST
 func testRealizaRequestHTTPPostForm(t *testing.T, form url.Values,
-	f func(*http.Request)) *httptest.ResponseRecorder {
+	f func(w http.ResponseWriter, r *http.Request)) {
 	// Criação do request HTTP
 	request, err := http.NewRequest("POST", "/", strings.NewReader(form.Encode()))
 	if err != nil {
@@ -105,11 +51,6 @@ func testRealizaRequestHTTPPostForm(t *testing.T, form url.Values,
 	recorder := httptest.NewRecorder()
 
 	// Upload do servidor de teste
-	rota := func(http.ResponseWriter, *http.Request) {
-
-	}
 	handler := http.HandlerFunc(f)
 	handler.ServeHTTP(recorder, request)
-
-	return recorder
 }

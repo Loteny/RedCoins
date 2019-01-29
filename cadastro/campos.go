@@ -11,7 +11,10 @@ import (
 // email verifica se o e-mail é válido (formato regex /.+@.+/) e possui pelo
 // menos 3 caracteres e no máximo 128 caracteres
 func email(email string) error {
-	return validacaoMatchSimples(email, "^(?=.{3,64}$).+@.+$", ErrEmailInvalido)
+	if utf8.RuneCountInString(email) < 3 || utf8.RuneCountInString(email) > 128 {
+		return ErrNomeInvalido
+	}
+	return validacaoMatchSimples(email, "^.+@.+$", ErrEmailInvalido)
 }
 
 // senha verifica se a senha possui pelo menos 6 caracteres e no máximo 50 bytes
