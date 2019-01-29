@@ -8,7 +8,9 @@ import (
 	"net/http"
 
 	"github.com/loteny/redcoins/comunicacao"
+	"github.com/loteny/redcoins/database"
 	"github.com/loteny/redcoins/erros"
+	"github.com/loteny/redcoins/passenc"
 )
 
 // Lista de possíveis erros do módulo
@@ -99,5 +101,18 @@ func validaDadosCadastro(dados *dadosCadastrais) (err error) {
 // verificaLogin verifica se os credenciais existem e estão corretos no banco
 // de dados utilizando encriptação de senhas
 func verificaLogin(email string, senha string) (bool, error) {
-	return (email == "teste@gmail.com" && senha == "123456"), nil
+	// Adquire a senha hashed do banco de dados
+	senhaDB, err := database.AdquireSenhaHashed("email")
+	if err == database.ErrUsuarioNaoExiste {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	// Verifica se as senhas são as mesmas
+	sucesso, err := passenc.VerificaSenha([]byte(senha), senhaDB)
+	if err != nil {
+		return false, err
+	}
+	return sucesso, nil
 }

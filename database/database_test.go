@@ -12,9 +12,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// Nome do banco de dados para testes
-var testDbNome = "redcoins_teste"
-
 func TestCriaTabelas(t *testing.T) {
 	// Abre o banco de dados de testes
 	backupDsn := testAlteraDsn()
