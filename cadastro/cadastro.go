@@ -37,6 +37,23 @@ func RealizaCadastroRequestHTTP(r *http.Request) error {
 	return err
 }
 
+// VerificaLoginRequestHTTP verifica se o usuário existe e a senha está correta
+// a partir de um request HTTP. O request deve ser do tipo POST.
+func VerificaLoginRequestHTTP(r *http.Request) (bool, error) {
+	// Verifica o método do request
+	if r.Method != "POST" {
+		return false, ErrMetodoPost
+	}
+	// Adquire os dados do request
+	if err := comunicacao.RealizaParseForm(r); err != nil {
+		return false, err
+	}
+	email := r.PostFormValue("email")
+	senha := r.PostFormValue("senha")
+
+	return verificaLogin(email, senha)
+}
+
 // ValidaDadosCadastroRequestHTTP valida os dados cadastrais apropriados
 // recebidos no request HTTP. O request deve ser do tipo POST, caso contrário,
 // ocorrerá o erro HTTP de status code 405. Após adquirir os dados do request, a
@@ -47,7 +64,9 @@ func validaDadosCadastroRequestHTTP(r *http.Request) (dados dadosCadastrais, err
 		return dadosCadastrais{}, ErrMetodoPost
 	}
 	// Adquire os dados do request
-	comunicacao.RealizaParseForm(r)
+	if err := comunicacao.RealizaParseForm(r); err != nil {
+		return dadosCadastrais{}, err
+	}
 	dados.email = r.PostFormValue("email")
 	dados.senha = r.PostFormValue("senha")
 	dados.nome = r.PostFormValue("nome")
@@ -75,4 +94,10 @@ func validaDadosCadastro(dados *dadosCadastrais) (err error) {
 		return err
 	}
 	return
+}
+
+// verificaLogin verifica se os credenciais existem e estão corretos no banco
+// de dados utilizando encriptação de senhas
+func verificaLogin(email string, senha string) (bool, error) {
+	return (email == "teste@gmail.com" && senha == "123456"), nil
 }

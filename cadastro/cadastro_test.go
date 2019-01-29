@@ -36,6 +36,51 @@ func TestRealizaCadastroRequestHTTP(t *testing.T) {
 	testRealizaRequestHTTPPostForm(t, form, rotaHTTP)
 }
 
+func TestVerificaLoginRequestHTTP(t *testing.T) {
+	// Conta válida
+	form := url.Values{}
+	form.Set("email", "teste@gmail.com")
+	form.Set("senha", "123456")
+	// Função que vai chamar a função a ser testada e tratar seu retorno
+	rotaHTTP := func(w http.ResponseWriter, r *http.Request) {
+		logado, err := VerificaLoginRequestHTTP(r)
+		if err != nil {
+			t.Errorf("Erro inesperado no login: %v", err)
+		} else if !logado {
+			t.Errorf("Usuário não foi logado quando deveria ter sido.")
+		}
+	}
+	testRealizaRequestHTTPPostForm(t, form, rotaHTTP)
+
+	// Senha incorreta
+	form.Set("email", "teste@gmail.com")
+	form.Set("senha", "123455")
+	// Função que vai chamar a função a ser testada e tratar seu retorno
+	rotaHTTP = func(w http.ResponseWriter, r *http.Request) {
+		logado, err := VerificaLoginRequestHTTP(r)
+		if err != nil {
+			t.Errorf("Erro inesperado no login: %v", err)
+		} else if logado {
+			t.Errorf("Usuário foi logado quando não deveria ter sido.")
+		}
+	}
+	testRealizaRequestHTTPPostForm(t, form, rotaHTTP)
+
+	// Conta não existente
+	form.Set("email", "email-nao-cadastrado@gmail.com")
+	form.Set("senha", "123456")
+	// Função que vai chamar a função a ser testada e tratar seu retorno
+	rotaHTTP = func(w http.ResponseWriter, r *http.Request) {
+		logado, err := VerificaLoginRequestHTTP(r)
+		if err != nil {
+			t.Errorf("Erro inesperado no login: %v", err)
+		} else if logado {
+			t.Errorf("Usuário foi logado quando não deveria ter sido.")
+		}
+	}
+	testRealizaRequestHTTPPostForm(t, form, rotaHTTP)
+}
+
 // testRealizaRequestHTTPPostForm é uma função auxiliar para geração de requests
 // HTTP com formulário POST
 func testRealizaRequestHTTPPostForm(t *testing.T, form url.Values,
