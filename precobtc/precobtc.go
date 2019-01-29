@@ -52,3 +52,12 @@ func PrecoUnidade() (float64, error) {
 
 	return rJSON.adquirePreco(), nil
 }
+
+// Preco retorna o preço de uma quantidade de Bitcoins em BRL
+func Preco(qtd float64) (float64, error) {
+	preco, err := PrecoUnidade()
+	if err != nil {
+		return 0, err
+	}
+	return preco * qtd, nil
+}
