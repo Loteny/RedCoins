@@ -3,8 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-
-	"github.com/loteny/redcoins/cadastro"
 )
 
 // addr especifica o endereço (incluindo porta) do servidor
@@ -28,7 +26,7 @@ func escutaConexoes() {
 // estabeleceRotas define as funções a serem chamadas para cada rota que for
 // pedida do servidor
 func estabeleceRotas() {
-	http.HandleFunc("/cadastro", cadastro.CadastraHTTPS)
+	http.HandleFunc("/cadastro", RotaCadastro)
 	// http.HandleFunc("/compra", nil)
 	// http.HandleFunc("/venda", nil)
 }
