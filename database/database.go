@@ -142,8 +142,8 @@ func InsereTransacao(email string, compra bool, bitcoins float64, preco float64)
 	}
 	// Trava as linhas associadas às transações do usuário para verificação
 	// de saldo e verifica se possui saldo suficiente para a transação
-	saldoCreditos, saldoBitcoins, err := adquireSaldosUsuario(tx, usrID)
-	if (compra && saldoCreditos < preco) || (!compra && saldoBitcoins < bitcoins) {
+	saldoBitcoins, err := adquireSaldosUsuario(tx, usrID)
+	if !compra && saldoBitcoins < bitcoins {
 		return ErrSaldoInsuficiente
 	}
 
@@ -242,29 +242,24 @@ func adquireUsuarioIDDeEmail(tx *sql.Tx, email string) (uint, error) {
 	return id, nil
 }
 
-// adquireSaldosUsuario adquire os saldos totais em reais e BitCoins que um
-// usuário possui pelo seu ID. Essa função também trava todas as linhas do
-// usuário na tabela 'transacao'.
-func adquireSaldosUsuario(tx *sql.Tx, usrID uint) (float64, float64, error) {
+// adquireSaldosUsuario adquire o saldo de BitCoins que um usuário possui pelo
+// seu ID. Essa função também trava todas as linhas do usuário na tabela
+// 'transacao'.
+func adquireSaldosUsuario(tx *sql.Tx, usrID uint) (float64, error) {
 	sqlCode := `SELECT
-		SUM(IF(t.compra=1, -1 * t.creditos, t.creditos)) AS creditos,
 		SUM(IF(t.compra=1, t.bitcoins, -1 * t.bitcoins)) AS bitcoins
 		FROM transacao AS t
 		WHERE t.usuario_id=?
 		FOR UPDATE;`
-	var creditos, bitcoins string
-	if err := tx.QueryRow(sqlCode, usrID).Scan(&creditos, &bitcoins); err != nil {
-		return 0, 0, err
+	var bitcoins string
+	if err := tx.QueryRow(sqlCode, usrID).Scan(&bitcoins); err != nil {
+		return 0, err
 	}
-	fCreditos, err := strconv.ParseFloat(creditos, 64)
+	fBitcoins, err := strconv.ParseFloat(bitcoins, 64)
 	if err != nil {
-		return 0, 0, err
+		return 0, err
 	}
-	fBitcoins, err := strconv.ParseFloat(creditos, 64)
-	if err != nil {
-		return 0, 0, err
-	}
-	return fCreditos, fBitcoins, nil
+	return fBitcoins, nil
 }
 
 // insereLinhaTransacao insere diretamente uma nova linha de transação no banco
