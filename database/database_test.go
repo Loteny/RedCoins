@@ -3,6 +3,7 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	"testing"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -157,6 +158,30 @@ func TestInsereTransacao(t *testing.T) {
 	}
 }
 
+func TestAdquireTransacoesDeUsuario(t *testing.T) {
+	backupDsn := testAlteraDsn()
+	defer testRetornaDsn(backupDsn)
+
+	// Popula as tabelas do banco de dados
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		t.Fatalf("Erro ao abrir banco de dados: %v", err)
+	}
+	testPopulaTabelas(t, db)
+
+	transacoes, err := AdquireTransacoesDeUsuario("teste@gmail.com")
+	if err != nil {
+		t.Errorf("Erro inesperado ao adquirir transações: %v", err)
+	}
+
+	valorEsperado := `[{teste@gmail.com true 1350 0.001 2018-03-07 02:57:33} ` +
+		`{teste@gmail.com false 253 0.00029 2018-03-07 22:04:21} ` +
+		`{teste@gmail.com false 563 0.00045 2018-08-27 10:44:02}]`
+	if valorEsperado != fmt.Sprintf("%v", transacoes) {
+		t.Errorf("Lista de transações possui valor inesperado: %v", transacoes)
+	}
+}
+
 // testAlteraDsn faz com que o módulo use o banco de dados de testes
 func testAlteraDsn() string {
 	backupDsn := dsn
@@ -179,8 +204,88 @@ func testDeletaTabela(t *testing.T, db *sql.DB, tabela string) {
 
 // testLimpaTabela realiza a função 'truncate' na tabela selecionada
 func testLimpaTabela(t *testing.T, db *sql.DB, tabela string) {
-	sqlCode := `TRUNCATE TABLE ` + tabela + `;`
+	sqlCode := `SET FOREIGN_KEY_CHECKS = 0;`
 	if _, err := db.Exec(sqlCode); err != nil {
 		t.Fatalf("Erro inesperado ao limpar tabela %v: %v", tabela, err)
+	}
+	sqlCode = `TRUNCATE TABLE ` + tabela + `;`
+	if _, err := db.Exec(sqlCode); err != nil {
+		t.Fatalf("Erro inesperado ao limpar tabela %v: %v", tabela, err)
+	}
+	sqlCode = `SET FOREIGN_KEY_CHECKS = 1;`
+	if _, err := db.Exec(sqlCode); err != nil {
+		t.Fatalf("Erro inesperado ao limpar tabela %v: %v", tabela, err)
+	}
+}
+
+// testPopulaTabelas popula todas as tabelas do banco de dados com uma variação
+// de dados. Essa função limpa as tabelas antes de popular.
+func testPopulaTabelas(t *testing.T, db *sql.DB) {
+	testLimpaTabela(t, db, "transacao")
+	testLimpaTabela(t, db, "usuario")
+	testPopulaUsuario(t, db)
+	testPopulaTransacao(t, db)
+}
+
+// testPopulaUsuario popula a tabela de usuários
+func testPopulaUsuario(t *testing.T, db *sql.DB) {
+	usr := Usuario{
+		email:      "teste@gmail.com",
+		senha:      "123456",
+		senhaHash:  "hash_teste",
+		nascimento: "1942-07-10",
+		nome:       "Ronnie James Dio",
+	}
+	if err := InsereUsuario(&usr); err != nil {
+		t.Fatalf("Erro ao popular tabela de usuários: %v", err)
+	}
+
+	usr = Usuario{
+		email:      "segundo@hotmail.com",
+		senha:      "password",
+		senhaHash:  "739HR&#Qt7e",
+		nascimento: "1946-09-05",
+		nome:       "Freddie Mercury",
+	}
+	if err := InsereUsuario(&usr); err != nil {
+		t.Fatalf("Erro ao popular tabela de usuários: %v", err)
+	}
+}
+
+// testPopulaTransacao popula a tabela de transações (dependente de dados
+// inseridos com a função testPopulaUsuario)
+func testPopulaTransacao(t *testing.T, db *sql.DB) {
+	// Primeiro usuário
+	// Compra de algumas Bitcoins
+	if err := InsereTransacao("teste@gmail.com", true, 0.001, 1350); err != nil {
+		t.Fatalf("Erro ao popular tabela de transações: %v", err)
+	}
+	// Vendas de algumas Bitcoins
+	if err := InsereTransacao("teste@gmail.com", false, 0.00029, 253); err != nil {
+		t.Fatalf("Erro ao popular tabela de transações: %v", err)
+	}
+	if err := InsereTransacao("teste@gmail.com", false, 0.00045, 563); err != nil {
+		t.Fatalf("Erro ao popular tabela de transações: %v", err)
+	}
+
+	// Uma simples transação para um segundo usuário
+	if err := InsereTransacao("segundo@hotmail.com", true, 0.023, 5826); err != nil {
+		t.Fatalf("Erro ao popular tabela de transações: %v", err)
+	}
+
+	// Altera as datas das transações
+	// As duas primeiras transações do primeiro usuário serão no mesmo dia (07/03/2018)
+	sqlCode := `UPDATE transacao SET tempo=? WHERE id=?;`
+	if _, err := db.Exec(sqlCode, "2018-03-07 02:57:33", 1); err != nil {
+		t.Fatalf("Erro ao popular tabela de transações: %v", err)
+	}
+	if _, err := db.Exec(sqlCode, "2018-03-07 22:04:21", 2); err != nil {
+		t.Fatalf("Erro ao popular tabela de transações: %v", err)
+	}
+	if _, err := db.Exec(sqlCode, "2018-08-27 10:44:02", 3); err != nil {
+		t.Fatalf("Erro ao popular tabela de transações: %v", err)
+	}
+	if _, err := db.Exec(sqlCode, "2019-01-02 13:33:33", 4); err != nil {
+		t.Fatalf("Erro ao popular tabela de transações: %v", err)
 	}
 }

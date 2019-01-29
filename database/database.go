@@ -42,6 +42,15 @@ type Usuario struct {
 	nascimento string
 }
 
+// Transacao é a estrutura com dados de uma transação
+type Transacao struct {
+	usuario  string
+	compra   bool
+	creditos float64
+	bitcoins float64
+	tempo    string
+}
+
 // CriaTabelas cria as tabelas do banco de dados do servidor
 func CriaTabelas() error {
 	db, err := sql.Open("mysql", dsn)
@@ -143,7 +152,9 @@ func InsereTransacao(email string, compra bool, bitcoins float64, preco float64)
 	// Trava as linhas associadas às transações do usuário para verificação
 	// de saldo e verifica se possui saldo suficiente para a transação
 	saldoBitcoins, err := adquireSaldosUsuario(tx, usrID)
-	if !compra && saldoBitcoins < bitcoins {
+	if err != nil {
+		return err
+	} else if !compra && saldoBitcoins < bitcoins {
 		return ErrSaldoInsuficiente
 	}
 
@@ -156,6 +167,43 @@ func InsereTransacao(email string, compra bool, bitcoins float64, preco float64)
 	}
 
 	return nil
+}
+
+// AdquireTransacoesDeUsuario adquire todas as transações feitas por um usuário
+// identificado pelo seu e-mail na forma []Transacao
+func AdquireTransacoesDeUsuario(email string) ([]Transacao, error) {
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	sqlCode := `SELECT
+		t.compra, t.creditos, t.bitcoins, t.tempo
+		FROM usuario AS u
+		INNER JOIN transacao AS t ON t.usuario_id = u.id
+		WHERE u.email=?;`
+	rows, err := db.Query(sqlCode, email)
+	if err != nil {
+		return nil, err
+	}
+
+	// Armazena os resultados na variável de retorno 'transacoes'
+	defer rows.Close()
+	transacoes := make([]Transacao, 0)
+	for rows.Next() {
+		tr := Transacao{usuario: email}
+		compra := make([]uint8, 1)
+		if err := rows.Scan(&compra, &tr.creditos, &tr.bitcoins, &tr.tempo); err != nil {
+			return nil, err
+		}
+		tr.compra = compra[0] == 1
+		transacoes = append(transacoes, tr)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return transacoes, nil
 }
 
 // criaTabelaUsuario cria a tabela 'usuario' no banco de dados que armazena
@@ -237,15 +285,17 @@ func verificaUsuarioDuplicado(db *sql.DB, email string) error {
 }
 
 // adquireUsuarioIDDeEmail adquire o ID da tabela 'usuario' a partir de seu
-// e-mail.
+// e-mail. Pode retornar ErrUsuarioNaoExiste.
 func adquireUsuarioIDDeEmail(tx *sql.Tx, email string) (uint, error) {
 	sqlCode := `SELECT id FROM usuario WHERE email=?;`
-	row := tx.QueryRow(sqlCode, email)
-	var id uint
-	if err := row.Scan(&id); err != nil {
+	var id sql.NullInt64
+	err := tx.QueryRow(sqlCode, email).Scan(&id)
+	if err == sql.ErrNoRows {
+		return 0, ErrUsuarioNaoExiste
+	} else if err != nil {
 		return 0, err
 	}
-	return id, nil
+	return uint(id.Int64), nil
 }
 
 // adquireSaldosUsuario adquire o saldo de BitCoins que um usuário possui pelo
@@ -253,15 +303,21 @@ func adquireUsuarioIDDeEmail(tx *sql.Tx, email string) (uint, error) {
 // 'transacao'.
 func adquireSaldosUsuario(tx *sql.Tx, usrID uint) (float64, error) {
 	sqlCode := `SELECT
-		SUM(IF(t.compra=1, t.bitcoins, -1 * t.bitcoins)) AS bitcoins
+		IFNULL(SUM(IF(t.compra=1, t.bitcoins, -1 * t.bitcoins)), "0") AS bitcoins
 		FROM transacao AS t
 		WHERE t.usuario_id=?
 		FOR UPDATE;`
-	var bitcoins string
-	if err := tx.QueryRow(sqlCode, usrID).Scan(&bitcoins); err != nil {
+	var bitcoins sql.NullString
+	err := tx.QueryRow(sqlCode, usrID).Scan(&bitcoins)
+	// Caso não haja resultados, o usuário não fez nenhuma transação e seu
+	// crédito de Bitcoins é zero
+	if err == sql.ErrNoRows {
+		return 0, nil
+	} else if err != nil {
 		return 0, err
 	}
-	fBitcoins, err := strconv.ParseFloat(bitcoins, 64)
+
+	fBitcoins, err := strconv.ParseFloat(bitcoins.String, 64)
 	if err != nil {
 		return 0, err
 	}
