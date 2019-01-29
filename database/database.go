@@ -4,6 +4,7 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"flag"
 	"fmt"
 	"strconv"
 
@@ -20,6 +21,8 @@ var (
 	senhaDb = ""
 	// Nome do banco de dados
 	dbNome = "redcoins"
+	// Nome do banco de dados de testes
+	testDbNome = "redcoins_teste"
 	// Endereço do bando de dados com port
 	enderecoDb = "localhost:55555"
 	// Data Source Name: string completa para conexão com o banco de dados
@@ -36,10 +39,10 @@ var (
 // Usuario é a estrutura para a tabela 'usuario'.
 // O campo 'senha' deve conter até 60 bytes
 type Usuario struct {
-	email      string
-	senha      []byte
-	nome       string
-	nascimento string
+	Email      string
+	Senha      []byte
+	Nome       string
+	Nascimento string
 }
 
 // Transacao é a estrutura com dados de uma transação
@@ -83,7 +86,7 @@ func InsereUsuario(usr *Usuario) error {
 	}
 
 	// Verifica se o usuário existe
-	if err := verificaUsuarioDuplicado(db, usr.email); err != nil {
+	if err := verificaUsuarioDuplicado(db, usr.Email); err != nil {
 		return err
 	}
 
@@ -93,10 +96,10 @@ func InsereUsuario(usr *Usuario) error {
 		VALUES (?, ?, ?, ?);`
 	if _, err := db.Exec(
 		sqlCode,
-		usr.email,
-		usr.senha,
-		usr.nome,
-		usr.nascimento); err != nil {
+		usr.Email,
+		usr.Senha,
+		usr.Nome,
+		usr.Nascimento); err != nil {
 		return err
 	}
 
@@ -373,4 +376,11 @@ func insereLinhaTransacao(tx *sql.Tx, usuario uint, compra bool, preco float64, 
 		return err
 	}
 	return nil
+}
+
+// init altera o DSN para usar o banco de dados de teste
+func init() {
+	if flag.Lookup("test.v") != nil {
+		dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
+	}
 }

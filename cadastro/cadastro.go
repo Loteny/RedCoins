@@ -8,7 +8,9 @@ import (
 	"net/http"
 
 	"github.com/loteny/redcoins/comunicacao"
+	"github.com/loteny/redcoins/database"
 	"github.com/loteny/redcoins/erros"
+	"github.com/loteny/redcoins/passenc"
 )
 
 // Lista de possíveis erros do módulo
@@ -33,8 +35,27 @@ type dadosCadastrais struct {
 // request HTTP. O request e os dados do usuário serão validados com a função
 // ValidaDadosCadastroRequestHTTP.
 func RealizaCadastroRequestHTTP(r *http.Request) error {
-	_, err := validaDadosCadastroRequestHTTP(r)
-	return err
+	// Valida o usuário
+	dados, err := validaDadosCadastroRequestHTTP(r)
+	if err != nil {
+		return err
+	}
+	// Gera a senha hashed
+	senhaHashed, err := passenc.GeraHashed([]byte(dados.senha))
+	if err != nil {
+		return err
+	}
+	// Insere o usuário no banco de dados
+	usr := database.Usuario{
+		Email:      dados.email,
+		Senha:      senhaHashed,
+		Nome:       dados.nome,
+		Nascimento: dados.nascimento,
+	}
+	if err := database.InsereUsuario(&usr); err != nil {
+		return err
+	}
+	return nil
 }
 
 // VerificaLoginRequestHTTP verifica se o usuário existe e a senha está correta
@@ -99,5 +120,18 @@ func validaDadosCadastro(dados *dadosCadastrais) (err error) {
 // verificaLogin verifica se os credenciais existem e estão corretos no banco
 // de dados utilizando encriptação de senhas
 func verificaLogin(email string, senha string) (bool, error) {
-	return (email == "teste@gmail.com" && senha == "123456"), nil
+	// Adquire a senha hashed do banco de dados
+	senhaDB, err := database.AdquireSenhaHashed(email)
+	if err == database.ErrUsuarioNaoExiste {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	// Verifica se as senhas são as mesmas
+	sucesso, err := passenc.VerificaSenha([]byte(senha), senhaDB)
+	if err != nil {
+		return false, err
+	}
+	return sucesso, nil
 }

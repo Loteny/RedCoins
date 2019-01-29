@@ -12,9 +12,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// Nome do banco de dados para testes
-var testDbNome = "redcoins_teste"
-
 func TestCriaTabelas(t *testing.T) {
 	// Abre o banco de dados de testes
 	backupDsn := testAlteraDsn()
@@ -65,10 +62,10 @@ func TestCriaTabelas(t *testing.T) {
 
 func TestInsereUsuario(t *testing.T) {
 	usr := Usuario{
-		email:      "teste@gmail.com",
-		senha:      []byte("123456"),
-		nascimento: "1942-07-10",
-		nome:       "Ronnie James Dio",
+		Email:      "teste@gmail.com",
+		Senha:      []byte("123456"),
+		Nascimento: "1942-07-10",
+		Nome:       "Ronnie James Dio",
 	}
 
 	// Altera o banco de dados usado pelo módulo para usar o de testes
@@ -88,19 +85,19 @@ func TestInsereUsuario(t *testing.T) {
 	sqlCode := `SELECT email, senha, nome, nascimento
 		FROM usuario
 		WHERE email=?;`
-	row := db.QueryRow(sqlCode, usr.email)
+	row := db.QueryRow(sqlCode, usr.Email)
 	usrResposta := Usuario{}
 	if err := row.Scan(
-		&usrResposta.email,
-		&usrResposta.senha,
-		&usrResposta.nome,
-		&usrResposta.nascimento); err != nil {
+		&usrResposta.Email,
+		&usrResposta.Senha,
+		&usrResposta.Nome,
+		&usrResposta.Nascimento); err != nil {
 		t.Fatalf("Erro ao adquirir a linha de usuário: %v", err)
 	}
-	if !(usrResposta.email == usr.email &&
-		bytes.Equal(usrResposta.senha, usr.senha) &&
-		usrResposta.nome == usr.nome &&
-		usrResposta.nascimento == usr.nascimento) {
+	if !(usrResposta.Email == usr.Email &&
+		bytes.Equal(usrResposta.Senha, usr.Senha) &&
+		usrResposta.Nome == usr.Nome &&
+		usrResposta.Nascimento == usr.Nascimento) {
 		t.Fatalf("Usuário inserido incorretamente.\nOriginal: %v\nAdquirido: %v", usr, usrResposta)
 	}
 
@@ -257,20 +254,20 @@ func testPopulaTabelas(t *testing.T, db *sql.DB) {
 // testPopulaUsuario popula a tabela de usuários
 func testPopulaUsuario(t *testing.T, db *sql.DB) {
 	usr := Usuario{
-		email:      "teste@gmail.com",
-		senha:      []byte("123456"),
-		nascimento: "1942-07-10",
-		nome:       "Ronnie James Dio",
+		Email:      "teste@gmail.com",
+		Senha:      []byte("123456"),
+		Nascimento: "1942-07-10",
+		Nome:       "Ronnie James Dio",
 	}
 	if err := InsereUsuario(&usr); err != nil {
 		t.Fatalf("Erro ao popular tabela de usuários: %v", err)
 	}
 
 	usr = Usuario{
-		email:      "segundo@hotmail.com",
-		senha:      []byte("password"),
-		nascimento: "1946-09-05",
-		nome:       "Freddie Mercury",
+		Email:      "segundo@hotmail.com",
+		Senha:      []byte("password"),
+		Nascimento: "1946-09-05",
+		Nome:       "Freddie Mercury",
 	}
 	if err := InsereUsuario(&usr); err != nil {
 		t.Fatalf("Erro ao popular tabela de usuários: %v", err)
