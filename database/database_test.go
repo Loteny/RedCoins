@@ -4,6 +4,7 @@
 package database
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	"testing"
@@ -65,8 +66,7 @@ func TestCriaTabelas(t *testing.T) {
 func TestInsereUsuario(t *testing.T) {
 	usr := Usuario{
 		email:      "teste@gmail.com",
-		senha:      "123456",
-		senhaHash:  "hash_teste",
+		senha:      []byte("123456"),
 		nascimento: "1942-07-10",
 		nome:       "Ronnie James Dio",
 	}
@@ -85,7 +85,7 @@ func TestInsereUsuario(t *testing.T) {
 	}
 
 	// Verifica se o usuário foi inserido corretamente
-	sqlCode := `SELECT email, senha, senha_hash, nome, nascimento
+	sqlCode := `SELECT email, senha, nome, nascimento
 		FROM usuario
 		WHERE email=?;`
 	row := db.QueryRow(sqlCode, usr.email)
@@ -93,12 +93,14 @@ func TestInsereUsuario(t *testing.T) {
 	if err := row.Scan(
 		&usrResposta.email,
 		&usrResposta.senha,
-		&usrResposta.senhaHash,
 		&usrResposta.nome,
 		&usrResposta.nascimento); err != nil {
 		t.Fatalf("Erro ao adquirir a linha de usuário: %v", err)
 	}
-	if usrResposta != usr {
+	if !(usrResposta.email == usr.email &&
+		bytes.Equal(usrResposta.senha, usr.senha) &&
+		usrResposta.nome == usr.nome &&
+		usrResposta.nascimento == usr.nascimento) {
 		t.Fatalf("Usuário inserido incorretamente.\nOriginal: %v\nAdquirido: %v", usr, usrResposta)
 	}
 
@@ -108,25 +110,25 @@ func TestInsereUsuario(t *testing.T) {
 	}
 }
 
-func TestAdquireSenhaEHash(t *testing.T) {
+func TestAdquireSenhaHashed(t *testing.T) {
 	// Altera o banco de dados usado pelo módulo para usar o de testes
 	backupDsn := dsn
 	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
 	defer func() { dsn = backupDsn }()
 
 	// Usuário existente
-	senha, hash, err := AdquireSenhaEHash("teste@gmail.com")
+	senha, err := AdquireSenhaHashed("teste@gmail.com")
 	if err != nil {
-		t.Fatalf("Erro inesperado ao adquirir senha/hash: %v", err)
+		t.Fatalf("Erro inesperado ao adquirir senha: %v", err)
 	}
-	if senha != "123456" || hash != "hash_teste" {
-		t.Errorf("Dados retornados incorretamente.\nSenha: %v\nHash: %v", senha, hash)
+	if string(senha) != "123456" {
+		t.Errorf("Senha retornada incorretamente: %v", senha)
 	}
 
 	// Usuário não existente
-	senha, hash, err = AdquireSenhaEHash("naoexistente@gmail.com")
+	senha, err = AdquireSenhaHashed("naoexistente@gmail.com")
 	if err != ErrUsuarioNaoExiste {
-		t.Errorf("Retorno inesperado para usuário inexistente.\nSenha: %v\nHash: %v\nErro: %v", senha, hash, err)
+		t.Errorf("Retorno inesperado para usuário inexistente.\nSenha: %v\nErro: %v", senha, err)
 	}
 }
 
@@ -256,8 +258,7 @@ func testPopulaTabelas(t *testing.T, db *sql.DB) {
 func testPopulaUsuario(t *testing.T, db *sql.DB) {
 	usr := Usuario{
 		email:      "teste@gmail.com",
-		senha:      "123456",
-		senhaHash:  "hash_teste",
+		senha:      []byte("123456"),
 		nascimento: "1942-07-10",
 		nome:       "Ronnie James Dio",
 	}
@@ -267,8 +268,7 @@ func testPopulaUsuario(t *testing.T, db *sql.DB) {
 
 	usr = Usuario{
 		email:      "segundo@hotmail.com",
-		senha:      "password",
-		senhaHash:  "739HR&#Qt7e",
+		senha:      []byte("password"),
 		nascimento: "1946-09-05",
 		nome:       "Freddie Mercury",
 	}

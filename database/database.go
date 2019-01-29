@@ -33,11 +33,11 @@ var (
 	ErrSaldoInsuficiente = errors.New("Saldo insuficiente")
 )
 
-// Usuario é a estrutura para a tabela 'usuario'
+// Usuario é a estrutura para a tabela 'usuario'.
+// O campo 'senha' deve conter até 60 bytes
 type Usuario struct {
 	email      string
-	senha      string
-	senhaHash  string
+	senha      []byte
 	nome       string
 	nascimento string
 }
@@ -89,13 +89,12 @@ func InsereUsuario(usr *Usuario) error {
 
 	// Insere usuário no banco de dados
 	sqlCode := `INSERT INTO usuario
-		(email, senha, senha_hash, nome, nascimento)
-		VALUES (?, ?, ?, ?, ?);`
+		(email, senha, nome, nascimento)
+		VALUES (?, ?, ?, ?);`
 	if _, err := db.Exec(
 		sqlCode,
 		usr.email,
 		usr.senha,
-		usr.senhaHash,
 		usr.nome,
 		usr.nascimento); err != nil {
 		return err
@@ -104,29 +103,27 @@ func InsereUsuario(usr *Usuario) error {
 	return nil
 }
 
-// AdquireSenhaEHash retorna a senha e o hash usado na senha de um usuário a
+// AdquireSenhaHashed retorna o campo 'senha' do usuário (salvada hashed) a
 // partir de seu email. Se o usuário não existe, retorna ErrUsuarioNaoExiste.
-func AdquireSenhaEHash(email string) (string, string, error) {
+func AdquireSenhaHashed(email string) ([]byte, error) {
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return "", "", err
+		return []byte{}, err
 	}
 
-	var senha, hash string
+	senha := make([]byte, 60)
 	// Adquire os dados do banco de dados
-	sqlCode := `SELECT senha, senha_hash
-		FROM usuario
-		WHERE email=?;`
+	sqlCode := `SELECT senha FROM usuario WHERE email=?;`
 	row := db.QueryRow(sqlCode, email)
-	err = row.Scan(&senha, &hash)
+	err = row.Scan(&senha)
 	// Se o usuário não existe, retorna ErrUsuarioNaoExiste
 	if err == sql.ErrNoRows {
-		return "", "", ErrUsuarioNaoExiste
+		return []byte{}, ErrUsuarioNaoExiste
 	} else if err != nil {
-		return "", "", err
+		return []byte{}, err
 	}
 
-	return senha, hash, nil
+	return senha, nil
 }
 
 // InsereTransacao cria uma nova transação no banco de dados a partir do e-mail
@@ -249,8 +246,7 @@ func criaTabelaUsuario(tx *sql.Tx) error {
 	sqlCode := `CREATE TABLE usuario (
 		id INT(11) UNSIGNED AUTO_INCREMENT,
 		email VARCHAR(128) UNIQUE NOT NULL,
-		senha VARCHAR(64) NOT NULL,
-		senha_hash CHAR(32) NOT NULL,
+		senha CHAR(60) NOT NULL,
 		nome VARCHAR(255) NOT NULL,
 		nascimento DATE NOT NULL,
 		CONSTRAINT pk_usuario_id PRIMARY KEY (id)
