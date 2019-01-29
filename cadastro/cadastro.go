@@ -16,6 +16,7 @@ var (
 	ErrMetodoPost         = erros.Cria(false, 405, "")
 	ErrEmailInvalido      = erros.Cria(false, 400, "email invalido")
 	ErrSenhaInvalida      = erros.Cria(false, 400, "senha invalida")
+	ErrSenhaMuitoLonga    = erros.Cria(false, 400, "senha muito longa")
 	ErrNomeInvalido       = erros.Cria(false, 400, "nome invalido")
 	ErrNascimentoInvalido = erros.Cria(false, 400, "nascimento invalido")
 )

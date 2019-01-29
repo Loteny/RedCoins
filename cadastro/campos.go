@@ -8,14 +8,18 @@ import (
 	"github.com/loteny/redcoins/erros"
 )
 
-// email verifica se o e-mail é válido (formato regex /.+@.+/)
+// email verifica se o e-mail é válido (formato regex /.+@.+/) e possui pelo
+// menos 3 caracteres e no máximo 128 caracteres
 func email(email string) error {
-	return validacaoMatchSimples(email, "^.+@.+$", ErrEmailInvalido)
+	return validacaoMatchSimples(email, "^(?=.{3,64}$).+@.+$", ErrEmailInvalido)
 }
 
-// senha verifica se a senha possui pelo menos 6 caracteres e no máximo 64
+// senha verifica se a senha possui pelo menos 6 caracteres e no máximo 50 bytes
 func senha(senha string) error {
-	return validacaoMatchSimples(senha, "^.{6,64}$", ErrSenhaInvalida)
+	if len([]byte(senha)) > 50 {
+		return ErrSenhaMuitoLonga
+	}
+	return validacaoMatchSimples(senha, "^.{6,}$", ErrSenhaInvalida)
 }
 
 // nome verifica se o campo não está vazio e se não excede 128 caracteres
@@ -26,13 +30,14 @@ func nome(nome string) error {
 	return nil
 }
 
-// nascimento verifica se a data está no formato válido e se a data é passada.
-// Problemas com fuso horário não são importantes, visto que só seriam
-// possivelmente bloqueados datas de nascimentos de recém-nascidos por problemas
-// de fuso horário. Além disso, o 'Time' resultante da data de entrada estará no
-// início do dia (00h00m00...), portanto, há uma "margem de erro" nessa função,
-// mas essa margem é pequena (algumas horas, possivelmente alguns dias,
-// dependendo de mudanças específicas de fusos horários) e pode ser ignorada
+// nascimento verifica se a data está no formato válido (YYYY-MM-DD) e se a data
+// é passada. Problemas com fuso horário não são importantes, visto que só
+// seriam possivelmente bloqueados datas de nascimentos de recém-nascidos por
+// problemas de fuso horário. Além disso, o 'Time' resultante da data de entrada
+// estará no início do dia (00h00m00...), portanto, há uma "margem de erro"
+// nessa função, mas essa margem é pequena (algumas horas, possivelmente alguns
+// dias, dependendo de mudanças específicas de fusos horários) e pode ser
+// ignorada.
 func nascimento(data string) error {
 	dataTime, err := time.Parse("2006-01-02", data)
 	if err != nil {
