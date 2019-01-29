@@ -8,18 +8,18 @@ import (
 	"testing"
 )
 
-func TestCadastraHTTPS(t *testing.T) {
+func TestRealizaCadastroRequestHTTP(t *testing.T) {
 	// Formulário válido
 	form := url.Values{}
 	form.Set("email", "teste@gmail.com")
 	form.Set("senha", "123456")
 	form.Set("nome", "Ronnie James Dio")
 	form.Set("nascimento", "1942-07-10")
-	testComunicacaoHTTPPostForm(t, form, CadastraHTTPS, http.StatusOK, ``)
+	testComunicacaoHTTPPostForm(t, form, RealizaCadastroRequestHTTP, http.StatusOK, ``)
 
 	// Nascimento inválido
 	form.Set("nascimento", "194207-10")
-	testComunicacaoHTTPPostForm(t, form, CadastraHTTPS, http.StatusBadRequest,
+	testComunicacaoHTTPPostForm(t, form, RealizaCadastroRequestHTTP, http.StatusBadRequest,
 		`{"erro":"nascimento invalido"}`)
 }
 
@@ -72,7 +72,7 @@ func TestValidaDadosCadastro(t *testing.T) {
 // testComunicacaoHTTPPostForm é uma função auxiliar para geração e tratamento
 // de requests HTTP com formulário POST
 func testComunicacaoHTTPPostForm(t *testing.T, form url.Values,
-	f func(http.ResponseWriter, *http.Request),
+	f func(*http.Request),
 	statusCodeEsperado int, respostaEsperada string) {
 
 	recorder := testRealizaRequestHTTPPostForm(t, form, f)
@@ -93,7 +93,7 @@ func testComunicacaoHTTPPostForm(t *testing.T, form url.Values,
 // testComunicacaoHTTPPostForm é uma função auxiliar para geração de requests
 // HTTP com formulário POST
 func testRealizaRequestHTTPPostForm(t *testing.T, form url.Values,
-	f func(http.ResponseWriter, *http.Request)) *httptest.ResponseRecorder {
+	f func(*http.Request)) *httptest.ResponseRecorder {
 	// Criação do request HTTP
 	request, err := http.NewRequest("POST", "/", strings.NewReader(form.Encode()))
 	if err != nil {
@@ -105,6 +105,9 @@ func testRealizaRequestHTTPPostForm(t *testing.T, form url.Values,
 	recorder := httptest.NewRecorder()
 
 	// Upload do servidor de teste
+	rota := func(http.ResponseWriter, *http.Request) {
+
+	}
 	handler := http.HandlerFunc(f)
 	handler.ServeHTTP(recorder, request)
 

@@ -29,21 +29,15 @@ type dadosCadastrais struct {
 	nascimento string
 }
 
-// CadastraHTTPS realiza o cadastro de um usuário a partir de um request HTTPS
-func CadastraHTTPS(w http.ResponseWriter, r *http.Request) {
-	if _, err := validaDadosCadastroRequestHTTP(r); err != nil {
-		interno, status, erroNativo := err.(erros.Erros).Abre()
-		if !interno {
-			comunicacao.RespondeErro(w, status, erroNativo)
-			return
-		}
-		comunicacao.Responde(w, status, []byte{})
-		return
-	}
-	comunicacao.RespondeSucesso(w, []byte{})
+// RealizaCadastroRequestHTTP realiza o cadastro de um usuário a partir de um
+// request HTTP. O request e os dados do usuário serão validados com a função
+// ValidaDadosCadastroRequestHTTP.
+func RealizaCadastroRequestHTTP(r *http.Request) error {
+	_, err := validaDadosCadastroRequestHTTP(r)
+	return err
 }
 
-// validaDadosCadastroRequestHTTP valida os dados cadastrais apropriados
+// ValidaDadosCadastroRequestHTTP valida os dados cadastrais apropriados
 // recebidos no request HTTP. O request deve ser do tipo POST, caso contrário,
 // ocorrerá o erro HTTP de status code 405. Após adquirir os dados do request, a
 // função chama validaDadosCadastro para validar e limpar os dados
