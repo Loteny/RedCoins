@@ -206,6 +206,43 @@ func AdquireTransacoesDeUsuario(email string) ([]Transacao, error) {
 	return transacoes, nil
 }
 
+// AdquireTransacoesEmDia adquire todas as transações feitas em um determinado
+// dia no formato "YYYY-MM-DD" e retorna uma lista de Transacao
+func AdquireTransacoesEmDia(dia string) ([]Transacao, error) {
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	sqlCode := `SELECT
+		u.email, t.compra, t.creditos, t.bitcoins, t.tempo
+		FROM transacao AS t
+		INNER JOIN usuario AS u ON u.id = t.usuario_id
+		WHERE DATE(t.tempo)=?;`
+	rows, err := db.Query(sqlCode, dia)
+	if err != nil {
+		return nil, err
+	}
+
+	// Armazena os resultados na variável de retorno 'transacoes'
+	defer rows.Close()
+	transacoes := make([]Transacao, 0)
+	for rows.Next() {
+		tr := Transacao{}
+		compra := make([]uint8, 1)
+		if err := rows.Scan(&tr.usuario, &compra, &tr.creditos, &tr.bitcoins, &tr.tempo); err != nil {
+			return nil, err
+		}
+		tr.compra = compra[0] == 1
+		transacoes = append(transacoes, tr)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return transacoes, nil
+}
+
 // criaTabelaUsuario cria a tabela 'usuario' no banco de dados que armazena
 // os dados cadastrais dos usuários
 func criaTabelaUsuario(tx *sql.Tx) error {

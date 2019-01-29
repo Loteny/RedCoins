@@ -1,4 +1,6 @@
-// Package database serve para abstrair operações com o banco de dados
+// Package database serve para abstrair operações com o banco de dados.
+// Devido à natureza de alteração de estruturas e dados do banco de dados, os
+// testes devem ser executados sequencialmente para maior confiabilidade.
 package database
 
 import (
@@ -177,6 +179,29 @@ func TestAdquireTransacoesDeUsuario(t *testing.T) {
 	valorEsperado := `[{teste@gmail.com true 1350 0.001 2018-03-07 02:57:33} ` +
 		`{teste@gmail.com false 253 0.00029 2018-03-07 22:04:21} ` +
 		`{teste@gmail.com false 563 0.00045 2018-08-27 10:44:02}]`
+	if valorEsperado != fmt.Sprintf("%v", transacoes) {
+		t.Errorf("Lista de transações possui valor inesperado: %v", transacoes)
+	}
+}
+
+func TestAdquireTransacoesEmDia(t *testing.T) {
+	backupDsn := testAlteraDsn()
+	defer testRetornaDsn(backupDsn)
+
+	// Popula as tabelas do banco de dados
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		t.Fatalf("Erro ao abrir banco de dados: %v", err)
+	}
+	testPopulaTabelas(t, db)
+
+	transacoes, err := AdquireTransacoesEmDia("2018-03-07")
+	if err != nil {
+		t.Errorf("Erro inesperado ao adquirir transações: %v", err)
+	}
+
+	valorEsperado := `[{teste@gmail.com true 1350 0.001 2018-03-07 02:57:33} ` +
+		`{teste@gmail.com false 253 0.00029 2018-03-07 22:04:21}]`
 	if valorEsperado != fmt.Sprintf("%v", transacoes) {
 		t.Errorf("Lista de transações possui valor inesperado: %v", transacoes)
 	}
