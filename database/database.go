@@ -46,11 +46,20 @@ func CriaTabelas() error {
 		return err
 	}
 
+	// Todo o banco de dados deve ser gerado em uma única transação
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	// Criação das tabelas individualmente
 	if err := criaTabelaUsuario(db); err != nil {
 		return err
 	}
+	if err := criaTabelaTransacao(db); err != nil {
+		return err
+	}
 
-	return nil
+	return tx.Commit()
 }
 
 // InsereUsuario cria uma nova linha na tabela 'usuario'. Retorna
@@ -133,6 +142,38 @@ func criaTabelaUsuario(db *sql.DB) error {
 	// Adiciona uma index no e-mail do usuário para otimizar pesquisas
 	sqlCode = `ALTER TABLE usuario
 		ADD INDEX idx_usuario_email (email);`
+	if _, err := db.Exec(sqlCode); err != nil {
+		return err
+	}
+	return nil
+}
+
+// criaTabelaTransacao cria a tabela 'transacao' no banco de dados que armazena
+// os dados de transações efetuadas pelos usuários.
+// O valor 'creditos' indica qual foi o valor em reais adquirido ou concedido
+// pelo usuário na transação, 'redcoins' indica o mesmo para seu crédito de
+// RedCoins, e 'compra' indica se a transação foi uma compra ou venda de
+// Redcoins (0 = venda; 1 = compra). 'tempo' indica quando a transação foi
+// realizada (Unix Timestamp).
+func criaTabelaTransacao(db *sql.DB) error {
+	sqlCode := `CREATE TABLE transacao (
+		id INT(11) UNSIGNED AUTO_INCREMENT,
+		usuario_id INT(11) UNSIGNED NOT NULL,
+		compra BIT(1) NOT NULL,
+		creditos DECIMAL(18,9) NOT NULL,
+		redcoins DECIMAL(15,8) NOT NULL,
+		tempo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		CONSTRAINT pk_transacao_id PRIMARY KEY (id),
+		CONSTRAINT fk_transacao_usuario_id
+			FOREIGN KEY (usuario_id)
+			REFERENCES usuario(id)
+	) ENGINE=InnoDB;`
+	if _, err := db.Exec(sqlCode); err != nil {
+		return err
+	}
+	// Adiciona uma index no ID do usuário para otimizar pesquisas
+	sqlCode = `ALTER TABLE transacao
+		ADD INDEX idx_transacao_usuario_id (usuario_id);`
 	if _, err := db.Exec(sqlCode); err != nil {
 		return err
 	}

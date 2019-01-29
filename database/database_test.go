@@ -12,24 +12,23 @@ import (
 var testDbNome = "redcoins_teste"
 
 func TestCriaTabelas(t *testing.T) {
-	// Altera o banco de dados usado pelo módulo para usar o de testes
-	backupDsn := dsn
-	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
-	defer func() { dsn = backupDsn }()
-
-	// Lista todas as tabelas a serem criadas
-	tabelas := [1]string{"usuario"}
-
-	// Deleta as tabelas se existem
+	// Abre o banco de dados de testes
+	backupDsn := testAlteraDsn()
+	defer testRetornaDsn(backupDsn)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		t.Fatalf("Erro ao abrir o banco de dados: %v", err)
 	}
+
+	// Lista todas as tabelas a serem criadas
+	// Atenção para a ordem da lista: as tabelas serão deletadas nessa ordem,
+	// com verificações de foreign keys. Isso pode fazer com que uma tabela não
+	// possa ser deletada porque é referenciada por uma outra.
+	tabelas := [2]string{"transacao", "usuario"}
+
+	// Deleta as tabelas se existem
 	for _, tabela := range tabelas {
-		sqlCode := `DROP TABLE IF EXISTS ` + tabela + `;`
-		if _, err := db.Exec(sqlCode); err != nil {
-			t.Fatalf("Erro inesperado ao deletar tabelas: %v", err)
-		}
+		testDeletaTabela(t, db, tabela)
 	}
 
 	// Cria as tabelas
@@ -60,48 +59,6 @@ func TestCriaTabelas(t *testing.T) {
 	}
 }
 
-func TestCriaTabelaUsuario(t *testing.T) {
-	// Altera o banco de dados usado pelo módulo para usar o de testes
-	backupDsn := dsn
-	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
-	defer func() { dsn = backupDsn }()
-
-	// Deleta a tabela se existir
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		t.Fatalf("Erro ao abrir o banco de dados: %v", err)
-	}
-	sqlCode := `DROP TABLE IF EXISTS usuario;`
-	if _, err := db.Exec(sqlCode); err != nil {
-		t.Fatalf("Erro inesperado ao deletar tabela: %v", err)
-	}
-
-	// Cria a tabela
-	if err := criaTabelaUsuario(db); err != nil {
-		t.Fatalf("Erro inesperado: %v", err)
-	}
-
-	// Verifica se as tabelas existem
-	sqlCode = `SELECT COUNT(*)
-		FROM information_schema.tables
-		WHERE
-			TABLE_SCHEMA = ? AND
-			TABLE_NAME = ?;`
-	var qtdTabelas int
-	rows := db.QueryRow(sqlCode, testDbNome, "usuario")
-	if err := rows.Scan(&qtdTabelas); err != nil {
-		if err == sql.ErrNoRows {
-			t.Errorf("Tabela não foi criada.")
-		} else {
-			t.Fatalf("Erro inesperado na query: %v", err)
-		}
-	}
-	if qtdTabelas != 1 {
-		t.Errorf("Quantidade inesperada de tabelas: %v (deveria ser 1)",
-			qtdTabelas)
-	}
-}
-
 func TestInsereUsuario(t *testing.T) {
 	usr := Usuario{
 		email:      "teste@gmail.com",
@@ -120,18 +77,12 @@ func TestInsereUsuario(t *testing.T) {
 		t.Fatalf("Erro ao abrir o banco de dados: %v", err)
 	}
 
-	// Limpa a tabela de usuários se existir
-	sqlCode := `TRUNCATE usuario;`
-	if _, err := db.Exec(sqlCode); err != nil {
-		t.Fatalf("Erro inesperado ao limpar tabela: %v", err)
-	}
-
 	if err := InsereUsuario(&usr); err != nil {
 		t.Fatalf("Erro ao inserir dado no banco de dados: %v", err)
 	}
 
 	// Verifica se o usuário foi inserido corretamente
-	sqlCode = `SELECT email, senha, senha_hash, nome, nascimento
+	sqlCode := `SELECT email, senha, senha_hash, nome, nascimento
 		FROM usuario
 		WHERE email=?;`
 	row := db.QueryRow(sqlCode, usr.email)
@@ -173,5 +124,25 @@ func TestAdquireSenhaEHash(t *testing.T) {
 	senha, hash, err = AdquireSenhaEHash("naoexistente@gmail.com")
 	if err != ErrUsuarioNaoExiste {
 		t.Errorf("Retorno inesperado para usuário inexistente.\nSenha: %v\nHash: %v\nErro: %v", senha, hash, err)
+	}
+}
+
+// testAlteraDsn faz com que o módulo use o banco de dados de testes
+func testAlteraDsn() string {
+	backupDsn := dsn
+	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
+	return backupDsn
+}
+
+// testRetornaDsn desfaz a função testAlteraDsn
+func testRetornaDsn(backupDsn string) {
+	dsn = backupDsn
+}
+
+// testDeletaTabela deleta a tabela se existir
+func testDeletaTabela(t *testing.T, db *sql.DB, tabela string) {
+	sqlCode := `DROP TABLE IF EXISTS ` + tabela + `;`
+	if _, err := db.Exec(sqlCode); err != nil {
+		t.Fatalf("Erro inesperado ao deletar tabela %v: %v", tabela, err)
 	}
 }
