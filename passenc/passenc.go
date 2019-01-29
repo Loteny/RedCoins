@@ -16,3 +16,15 @@ func GeraHashed(senha []byte) ([]byte, error) {
 	}
 	return hash, nil
 }
+
+// VerificaSenha checa se a senha e a senha hashed passada são equivalentes. O
+// retorno da função indica se são.
+func VerificaSenha(senha, senhaHashed []byte) (bool, error) {
+	err := bcrypt.CompareHashAndPassword(senhaHashed, senha)
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+	return true, nil
+}

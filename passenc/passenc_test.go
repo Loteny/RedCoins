@@ -22,3 +22,25 @@ func TestGeraHashed(t *testing.T) {
 		t.Errorf("Resultado do hashing inválido: %v", err)
 	}
 }
+
+func TestChecaSenha(t *testing.T) {
+	senha := []byte("123456")
+	hash, err := bcrypt.GenerateFromPassword(senha, bcrypt.MinCost)
+	if err != nil {
+		t.Fatalf("Erro inesperado: %v", err)
+	}
+	// Checa senha válida
+	valido, err := VerificaSenha(senha, hash)
+	if err != nil {
+		t.Errorf("Erro inesperado: %v", err)
+	} else if !valido {
+		t.Error("Senha considerada inválida quando deveria ser válida.")
+	}
+	// Checa senha inválida
+	valido, err = VerificaSenha([]byte("1234567"), hash)
+	if err != nil {
+		t.Errorf("Erro inesperado: %v", err)
+	} else if valido {
+		t.Error("Senha considerada válida quando deveria ser inválida.")
+	}
+}
