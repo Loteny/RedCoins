@@ -55,10 +55,10 @@ func CriaTabelas() error {
 		return err
 	}
 	// Criação das tabelas individualmente
-	if err := criaTabelaUsuario(db); err != nil {
+	if err := criaTabelaUsuario(tx); err != nil {
 		return err
 	}
-	if err := criaTabelaTransacao(db); err != nil {
+	if err := criaTabelaTransacao(tx); err != nil {
 		return err
 	}
 
@@ -160,7 +160,7 @@ func InsereTransacao(email string, compra bool, bitcoins float64, preco float64)
 
 // criaTabelaUsuario cria a tabela 'usuario' no banco de dados que armazena
 // os dados cadastrais dos usuários
-func criaTabelaUsuario(db *sql.DB) error {
+func criaTabelaUsuario(tx *sql.Tx) error {
 	sqlCode := `CREATE TABLE usuario (
 		id INT(11) UNSIGNED AUTO_INCREMENT,
 		email VARCHAR(128) UNIQUE NOT NULL,
@@ -170,13 +170,13 @@ func criaTabelaUsuario(db *sql.DB) error {
 		nascimento DATE NOT NULL,
 		CONSTRAINT pk_usuario_id PRIMARY KEY (id)
 	) ENGINE=InnoDB;`
-	if _, err := db.Exec(sqlCode); err != nil {
+	if _, err := tx.Exec(sqlCode); err != nil {
 		return err
 	}
 	// Adiciona uma index no e-mail do usuário para otimizar pesquisas
 	sqlCode = `ALTER TABLE usuario
 		ADD INDEX idx_usuario_email (email);`
-	if _, err := db.Exec(sqlCode); err != nil {
+	if _, err := tx.Exec(sqlCode); err != nil {
 		return err
 	}
 	return nil
@@ -189,7 +189,7 @@ func criaTabelaUsuario(db *sql.DB) error {
 // BitCoins, e 'compra' indica se a transação foi uma compra ou venda de
 // BitCoins (0 = venda; 1 = compra). 'tempo' indica quando a transação foi
 // realizada (Unix Timestamp).
-func criaTabelaTransacao(db *sql.DB) error {
+func criaTabelaTransacao(tx *sql.Tx) error {
 	sqlCode := `CREATE TABLE transacao (
 		id INT(11) UNSIGNED AUTO_INCREMENT,
 		usuario_id INT(11) UNSIGNED NOT NULL,
@@ -202,13 +202,13 @@ func criaTabelaTransacao(db *sql.DB) error {
 			FOREIGN KEY (usuario_id)
 			REFERENCES usuario(id)
 	) ENGINE=InnoDB;`
-	if _, err := db.Exec(sqlCode); err != nil {
+	if _, err := tx.Exec(sqlCode); err != nil {
 		return err
 	}
 	// Adiciona uma index no ID do usuário para otimizar pesquisas
 	sqlCode = `ALTER TABLE transacao
 		ADD INDEX idx_transacao_usuario_id (usuario_id);`
-	if _, err := db.Exec(sqlCode); err != nil {
+	if _, err := tx.Exec(sqlCode); err != nil {
 		return err
 	}
 	return nil
