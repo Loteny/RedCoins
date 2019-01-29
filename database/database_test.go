@@ -131,8 +131,28 @@ func TestInsereTransacao(t *testing.T) {
 	backupDsn := testAlteraDsn()
 	defer testRetornaDsn(backupDsn)
 
-	err := InsereTransacao("teste@gmail.com", true, 0.00001, 0.00001)
+	// Limpa a tabela de transações
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
+		t.Fatalf("Erro ao abrir banco de dados: %v", err)
+	}
+	testLimpaTabela(t, db, "transacao")
+
+	// Compra inicial que não deve dar erros
+	err = InsereTransacao("teste@gmail.com", true, 0.00001, 0.00001)
+	if err != nil {
+		t.Fatalf("Erro inesperado na transação: %v", err)
+	}
+
+	// Venda que deve ocorrer corretamente
+	err = InsereTransacao("teste@gmail.com", false, 0.000005, 0.00001)
+	if err != nil {
+		t.Fatalf("Erro inesperado na transação: %v", err)
+	}
+
+	// Venda que deve acarretar em saldo insuficiente
+	err = InsereTransacao("teste@gmail.com", false, 0.00000501, 0.00001)
+	if err != ErrSaldoInsuficiente {
 		t.Fatalf("Erro inesperado na transação: %v", err)
 	}
 }
@@ -154,5 +174,13 @@ func testDeletaTabela(t *testing.T, db *sql.DB, tabela string) {
 	sqlCode := `DROP TABLE IF EXISTS ` + tabela + `;`
 	if _, err := db.Exec(sqlCode); err != nil {
 		t.Fatalf("Erro inesperado ao deletar tabela %v: %v", tabela, err)
+	}
+}
+
+// testLimpaTabela realiza a função 'truncate' na tabela selecionada
+func testLimpaTabela(t *testing.T, db *sql.DB, tabela string) {
+	sqlCode := `TRUNCATE TABLE ` + tabela + `;`
+	if _, err := db.Exec(sqlCode); err != nil {
+		t.Fatalf("Erro inesperado ao limpar tabela %v: %v", tabela, err)
 	}
 }
