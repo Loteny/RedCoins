@@ -196,7 +196,7 @@ func criaTabelaTransacao(tx *sql.Tx) error {
 		compra BIT(1) NOT NULL,
 		creditos DECIMAL(18,9) NOT NULL,
 		bitcoins DECIMAL(15,8) NOT NULL,
-		tempo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		tempo TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		CONSTRAINT pk_transacao_id PRIMARY KEY (id),
 		CONSTRAINT fk_transacao_usuario_id
 			FOREIGN KEY (usuario_id)
@@ -205,9 +205,15 @@ func criaTabelaTransacao(tx *sql.Tx) error {
 	if _, err := tx.Exec(sqlCode); err != nil {
 		return err
 	}
-	// Adiciona uma index no ID do usuário para otimizar pesquisas
+	// Adiciona uma index no ID do usuário e uma index na coluna de tempo para
+	// otimizar pesquisas
 	sqlCode = `ALTER TABLE transacao
 		ADD INDEX idx_transacao_usuario_id (usuario_id);`
+	if _, err := tx.Exec(sqlCode); err != nil {
+		return err
+	}
+	sqlCode = `ALTER TABLE transacao
+		ADD INDEX idx_transacao_tempo (tempo);`
 	if _, err := tx.Exec(sqlCode); err != nil {
 		return err
 	}
