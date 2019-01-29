@@ -69,10 +69,6 @@ func InsereUsuario(usr *Usuario) error {
 	if err != nil {
 		return err
 	}
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
 
 	// Verifica se o usuário existe
 	if err := verificaUsuarioDuplicado(db, usr.email); err != nil {
@@ -93,9 +89,6 @@ func InsereUsuario(usr *Usuario) error {
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
 	return nil
 }
 
