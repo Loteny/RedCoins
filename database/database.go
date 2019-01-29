@@ -4,6 +4,8 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"strconv"
 
 	// Driver MySQL
 	_ "github.com/go-sql-driver/mysql"
@@ -26,8 +28,9 @@ var (
 
 // Erros possíveis do módulo
 var (
-	ErrUsuarioDuplicado = errors.New("E-mail já cadastrado")
-	ErrUsuarioNaoExiste = errors.New("Usuário não existente")
+	ErrUsuarioDuplicado  = errors.New("E-mail já cadastrado")
+	ErrUsuarioNaoExiste  = errors.New("Usuário não existente")
+	ErrSaldoInsuficiente = errors.New("Saldo insuficiente")
 )
 
 // Usuario é a estrutura para a tabela 'usuario'
@@ -117,6 +120,44 @@ func AdquireSenhaEHash(email string) (string, string, error) {
 	return senha, hash, nil
 }
 
+// InsereTransacao cria uma nova transação no banco de dados a partir do e-mail
+// de um usuário, do tipo da transação (compra ou venda), a quantidade de
+// BitCoins a ser comprada ou vendida e o valor pago ou recebido em reais pela
+// transação. A quantidade de BitCoins e o valor em reais devem ser números
+// inteiros: os 10 primeiros dígitos do valor em reais e os 8 primeiro dígitos.
+// da quantidade de BitCoins formam as partes decimais de seus valores reais
+func InsereTransacao(email string, compra bool, bitcoins float64, preco float64) error {
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return err
+	}
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	// Adquire o ID do usuário para buscas mais simples
+	usrID, err := adquireUsuarioIDDeEmail(tx, email)
+	if err != nil {
+		return err
+	}
+	// Trava as linhas associadas às transações do usuário para verificação
+	// de saldo e verifica se possui saldo suficiente para a transação
+	saldoCreditos, saldoBitcoins, err := adquireSaldosUsuario(tx, usrID)
+	if (compra && saldoCreditos < preco) || (!compra && saldoBitcoins < bitcoins) {
+		return ErrSaldoInsuficiente
+	}
+
+	// Insere a transação no banco de dados
+	if err := insereLinhaTransacao(tx, usrID, compra, preco, bitcoins); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // criaTabelaUsuario cria a tabela 'usuario' no banco de dados que armazena
 // os dados cadastrais dos usuários
 func criaTabelaUsuario(db *sql.DB) error {
@@ -185,6 +226,61 @@ func verificaUsuarioDuplicado(db *sql.DB, email string) error {
 	}
 	if rowQtd > 0 {
 		return ErrUsuarioDuplicado
+	}
+	return nil
+}
+
+// adquireUsuarioIDDeEmail adquire o ID da tabela 'usuario' a partir de seu
+// e-mail.
+func adquireUsuarioIDDeEmail(tx *sql.Tx, email string) (uint, error) {
+	sqlCode := `SELECT id FROM usuario WHERE email=?;`
+	row := tx.QueryRow(sqlCode, email)
+	var id uint
+	if err := row.Scan(&id); err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+// adquireSaldosUsuario adquire os saldos totais em reais e BitCoins que um
+// usuário possui pelo seu ID. Essa função também trava todas as linhas do
+// usuário na tabela 'transacao'.
+func adquireSaldosUsuario(tx *sql.Tx, usrID uint) (float64, float64, error) {
+	sqlCode := `SELECT
+		SUM(IF(t.compra=1, -1 * t.creditos, t.creditos)) AS creditos,
+		SUM(IF(t.compra=1, t.redcoins, -1 * t.redcoins)) AS redcoins
+		FROM transacao AS t
+		WHERE t.usuario_id=?
+		FOR UPDATE;`
+	var creditos, redcoins string
+	if err := tx.QueryRow(sqlCode, usrID).Scan(&creditos, &redcoins); err != nil {
+		return 0, 0, err
+	}
+	fCreditos, err := strconv.ParseFloat(creditos, 64)
+	if err != nil {
+		return 0, 0, err
+	}
+	fRedcoins, err := strconv.ParseFloat(creditos, 64)
+	if err != nil {
+		return 0, 0, err
+	}
+	return fCreditos, fRedcoins, nil
+}
+
+// insereLinhaTransacao insere diretamente uma nova linha de transação no banco
+// de dados.
+func insereLinhaTransacao(tx *sql.Tx, usuario uint, compra bool, preco float64, bitcoins float64) error {
+	sqlCode := `INSERT INTO
+	transacao (usuario_id, compra, creditos, redcoins)
+	VALUES (?, ?, ?, ?);`
+	var intCompra uint8
+	if compra {
+		intCompra = 1
+	} else {
+		intCompra = 0
+	}
+	if _, err := tx.Exec(sqlCode, usuario, intCompra, fmt.Sprintf("%18.9f", preco), fmt.Sprintf("%15.8f", bitcoins)); err != nil {
+		return err
 	}
 	return nil
 }

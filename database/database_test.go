@@ -127,6 +127,16 @@ func TestAdquireSenhaEHash(t *testing.T) {
 	}
 }
 
+func TestInsereTransacao(t *testing.T) {
+	backupDsn := testAlteraDsn()
+	defer testRetornaDsn(backupDsn)
+
+	err := InsereTransacao("teste@gmail.com", true, 0.00001, 0.00001)
+	if err != nil {
+		t.Fatalf("Erro inesperado na transação: %v", err)
+	}
+}
+
 // testAlteraDsn faz com que o módulo use o banco de dados de testes
 func testAlteraDsn() string {
 	backupDsn := dsn
