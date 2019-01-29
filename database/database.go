@@ -185,9 +185,9 @@ func criaTabelaUsuario(db *sql.DB) error {
 // criaTabelaTransacao cria a tabela 'transacao' no banco de dados que armazena
 // os dados de transações efetuadas pelos usuários.
 // O valor 'creditos' indica qual foi o valor em reais adquirido ou concedido
-// pelo usuário na transação, 'redcoins' indica o mesmo para seu crédito de
-// RedCoins, e 'compra' indica se a transação foi uma compra ou venda de
-// Redcoins (0 = venda; 1 = compra). 'tempo' indica quando a transação foi
+// pelo usuário na transação, 'bitcoins' indica o mesmo para seu crédito de
+// BitCoins, e 'compra' indica se a transação foi uma compra ou venda de
+// BitCoins (0 = venda; 1 = compra). 'tempo' indica quando a transação foi
 // realizada (Unix Timestamp).
 func criaTabelaTransacao(db *sql.DB) error {
 	sqlCode := `CREATE TABLE transacao (
@@ -195,7 +195,7 @@ func criaTabelaTransacao(db *sql.DB) error {
 		usuario_id INT(11) UNSIGNED NOT NULL,
 		compra BIT(1) NOT NULL,
 		creditos DECIMAL(18,9) NOT NULL,
-		redcoins DECIMAL(15,8) NOT NULL,
+		bitcoins DECIMAL(15,8) NOT NULL,
 		tempo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		CONSTRAINT pk_transacao_id PRIMARY KEY (id),
 		CONSTRAINT fk_transacao_usuario_id
@@ -248,30 +248,30 @@ func adquireUsuarioIDDeEmail(tx *sql.Tx, email string) (uint, error) {
 func adquireSaldosUsuario(tx *sql.Tx, usrID uint) (float64, float64, error) {
 	sqlCode := `SELECT
 		SUM(IF(t.compra=1, -1 * t.creditos, t.creditos)) AS creditos,
-		SUM(IF(t.compra=1, t.redcoins, -1 * t.redcoins)) AS redcoins
+		SUM(IF(t.compra=1, t.bitcoins, -1 * t.bitcoins)) AS bitcoins
 		FROM transacao AS t
 		WHERE t.usuario_id=?
 		FOR UPDATE;`
-	var creditos, redcoins string
-	if err := tx.QueryRow(sqlCode, usrID).Scan(&creditos, &redcoins); err != nil {
+	var creditos, bitcoins string
+	if err := tx.QueryRow(sqlCode, usrID).Scan(&creditos, &bitcoins); err != nil {
 		return 0, 0, err
 	}
 	fCreditos, err := strconv.ParseFloat(creditos, 64)
 	if err != nil {
 		return 0, 0, err
 	}
-	fRedcoins, err := strconv.ParseFloat(creditos, 64)
+	fBitcoins, err := strconv.ParseFloat(creditos, 64)
 	if err != nil {
 		return 0, 0, err
 	}
-	return fCreditos, fRedcoins, nil
+	return fCreditos, fBitcoins, nil
 }
 
 // insereLinhaTransacao insere diretamente uma nova linha de transação no banco
 // de dados.
 func insereLinhaTransacao(tx *sql.Tx, usuario uint, compra bool, preco float64, bitcoins float64) error {
 	sqlCode := `INSERT INTO
-	transacao (usuario_id, compra, creditos, redcoins)
+	transacao (usuario_id, compra, creditos, bitcoins)
 	VALUES (?, ?, ?, ?);`
 	var intCompra uint8
 	if compra {
