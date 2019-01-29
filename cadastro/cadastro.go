@@ -35,8 +35,27 @@ type dadosCadastrais struct {
 // request HTTP. O request e os dados do usuário serão validados com a função
 // ValidaDadosCadastroRequestHTTP.
 func RealizaCadastroRequestHTTP(r *http.Request) error {
-	_, err := validaDadosCadastroRequestHTTP(r)
-	return err
+	// Valida o usuário
+	dados, err := validaDadosCadastroRequestHTTP(r)
+	if err != nil {
+		return err
+	}
+	// Gera a senha hashed
+	senhaHashed, err := passenc.GeraHashed([]byte(dados.senha))
+	if err != nil {
+		return err
+	}
+	// Insere o usuário no banco de dados
+	usr := database.Usuario{
+		Email:      dados.email,
+		Senha:      senhaHashed,
+		Nome:       dados.nome,
+		Nascimento: dados.nascimento,
+	}
+	if err := database.InsereUsuario(&usr); err != nil {
+		return err
+	}
+	return nil
 }
 
 // VerificaLoginRequestHTTP verifica se o usuário existe e a senha está correta
@@ -102,7 +121,7 @@ func validaDadosCadastro(dados *dadosCadastrais) (err error) {
 // de dados utilizando encriptação de senhas
 func verificaLogin(email string, senha string) (bool, error) {
 	// Adquire a senha hashed do banco de dados
-	senhaDB, err := database.AdquireSenhaHashed("email")
+	senhaDB, err := database.AdquireSenhaHashed(email)
 	if err == database.ErrUsuarioNaoExiste {
 		return false, nil
 	} else if err != nil {

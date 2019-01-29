@@ -39,10 +39,10 @@ var (
 // Usuario é a estrutura para a tabela 'usuario'.
 // O campo 'senha' deve conter até 60 bytes
 type Usuario struct {
-	email      string
-	senha      []byte
-	nome       string
-	nascimento string
+	Email      string
+	Senha      []byte
+	Nome       string
+	Nascimento string
 }
 
 // Transacao é a estrutura com dados de uma transação
@@ -86,7 +86,7 @@ func InsereUsuario(usr *Usuario) error {
 	}
 
 	// Verifica se o usuário existe
-	if err := verificaUsuarioDuplicado(db, usr.email); err != nil {
+	if err := verificaUsuarioDuplicado(db, usr.Email); err != nil {
 		return err
 	}
 
@@ -96,10 +96,10 @@ func InsereUsuario(usr *Usuario) error {
 		VALUES (?, ?, ?, ?);`
 	if _, err := db.Exec(
 		sqlCode,
-		usr.email,
-		usr.senha,
-		usr.nome,
-		usr.nascimento); err != nil {
+		usr.Email,
+		usr.Senha,
+		usr.Nome,
+		usr.Nascimento); err != nil {
 		return err
 	}
 

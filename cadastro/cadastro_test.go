@@ -8,6 +8,8 @@ import (
 	"testing"
 )
 
+// TestRealizaCadastroRequestHTTP por enquanto exige que o banco de dados de
+// teste esteja vazio mas com as tabelas criadas
 func TestRealizaCadastroRequestHTTP(t *testing.T) {
 	// Formulário válido
 	form := url.Values{}
@@ -25,6 +27,7 @@ func TestRealizaCadastroRequestHTTP(t *testing.T) {
 	testRealizaRequestHTTPPostForm(t, form, rotaHTTP)
 
 	// Nascimento inválido
+	form.Set("email", "segundo@gmail.com")
 	form.Set("nascimento", "194207-10")
 	// Função que vai chamar a função a ser testada e tratar seu retorno
 	rotaHTTP = func(w http.ResponseWriter, r *http.Request) {
@@ -36,6 +39,8 @@ func TestRealizaCadastroRequestHTTP(t *testing.T) {
 	testRealizaRequestHTTPPostForm(t, form, rotaHTTP)
 }
 
+// TestVerificaLoginRequestHTTP por enquanto exige que
+// TestRealizaCadastroRequestHTTP seja executado antes
 func TestVerificaLoginRequestHTTP(t *testing.T) {
 	// Conta válida
 	form := url.Values{}
