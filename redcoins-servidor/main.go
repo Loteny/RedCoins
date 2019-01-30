@@ -36,8 +36,8 @@ func estabeleceRotas() {
 }
 
 func main() {
-	if err := database.CriaTabelas(); err != nil {
-		log.Fatalf("Erro ao tentar criar tabelas no banco de dados: %s", err)
+	if err := database.CriaDatabase(); err != nil {
+		log.Fatalf("Erro ao tentar banco de dados: %s", err)
 	}
 	escutaConexoes()
 }
