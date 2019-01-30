@@ -139,6 +139,12 @@ func JuntaErros(e1, e2 error) Erros {
 	} else if objErros2.interno {
 		return objErros2
 	}
+	// Verifica se um dos dois está vazio
+	if Vazio(objErros1) {
+		return objErros2
+	} else if Vazio(objErros2) {
+		return objErros1
+	}
 	// Une os dois erros
 	objErros1.msg = append(objErros1.msg, objErros2.msg...)
 	return objErros1
