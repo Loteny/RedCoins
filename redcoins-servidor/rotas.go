@@ -18,7 +18,7 @@ func RotaCadastro(w http.ResponseWriter, r *http.Request) {
 		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
 		return
 	}
-	respostaPadrao(w, r, cadastro.RealizaCadastroRequestHTTP)
+	respostaPadrao(w, r, http.StatusCreated, cadastro.RealizaCadastroRequestHTTP)
 }
 
 // RotaCompra realiza a compra de Bitcoins para um usuário a partir de um
@@ -30,7 +30,7 @@ func RotaCompra(w http.ResponseWriter, r *http.Request) {
 		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
 		return
 	}
-	respostaPadrao(w, r, transacao.CompraHTTP)
+	respostaPadrao(w, r, http.StatusCreated, transacao.CompraHTTP)
 }
 
 // RotaVenda realiza a venda de Bitcoins para um usuário a partir de um request
@@ -42,7 +42,7 @@ func RotaVenda(w http.ResponseWriter, r *http.Request) {
 		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
 		return
 	}
-	respostaPadrao(w, r, transacao.VendaHTTP)
+	respostaPadrao(w, r, http.StatusCreated, transacao.VendaHTTP)
 }
 
 // respostaPadrao chamada a função 'f' e envia a resposta HTTP adequada
@@ -51,7 +51,8 @@ func RotaVenda(w http.ResponseWriter, r *http.Request) {
 // Se o erro for interno, apenas o statusCode deve ser enviado para o cliente,
 // indicando um erro no servidor sem dar detalhes de seu funcionamento. Se não
 // for, os erros devem ser enviados para cliente.
-func respostaPadrao(w http.ResponseWriter, r *http.Request, f func(*http.Request) erros.Erros) {
+// statusSucesso indica o status code HTTP para caso de sucesso.
+func respostaPadrao(w http.ResponseWriter, r *http.Request, statusSucesso int, f func(*http.Request) erros.Erros) {
 	if err := f(r); !erros.Vazio(err) {
 		interno, status, _ := erros.Abre(err)
 		if !interno {
@@ -61,5 +62,5 @@ func respostaPadrao(w http.ResponseWriter, r *http.Request, f func(*http.Request
 		comunicacao.Responde(w, status, []byte{})
 		return
 	}
-	comunicacao.RespondeSucesso(w, []byte{})
+	comunicacao.Responde(w, http.StatusCreated, []byte{})
 }

@@ -22,12 +22,6 @@ func Responde(w http.ResponseWriter, s int, r []byte) error {
 	return err
 }
 
-// RespondeSucesso considera o status code da resposta HTTP como 200 (OK) e
-// invoca a função Responde
-func RespondeSucesso(w http.ResponseWriter, r []byte) error {
-	return Responde(w, http.StatusOK, r)
-}
-
 // RespondeErro envia a mensagem de erro passada para função em JSON
 func RespondeErro(w http.ResponseWriter, statusCode int, e erros.Erros) error {
 	m := make(map[string][]string)
