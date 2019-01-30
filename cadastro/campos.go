@@ -10,7 +10,7 @@ import (
 
 // email verifica se o e-mail é válido (formato regex /.+@.+/) e possui pelo
 // menos 3 caracteres e no máximo 128 caracteres
-func email(email string) error {
+func email(email string) erros.Erros {
 	if utf8.RuneCountInString(email) < 3 || utf8.RuneCountInString(email) > 128 {
 		return ErrNomeInvalido
 	}
@@ -18,7 +18,7 @@ func email(email string) error {
 }
 
 // senha verifica se a senha possui pelo menos 6 caracteres e no máximo 50 bytes
-func senha(senha string) error {
+func senha(senha string) erros.Erros {
 	if len([]byte(senha)) > 50 {
 		return ErrSenhaMuitoLonga
 	}
@@ -26,11 +26,11 @@ func senha(senha string) error {
 }
 
 // nome verifica se o campo não está vazio e se não excede 128 caracteres
-func nome(nome string) error {
+func nome(nome string) erros.Erros {
 	if utf8.RuneCountInString(nome) <= 0 || utf8.RuneCountInString(nome) > 128 {
 		return ErrNomeInvalido
 	}
-	return nil
+	return erros.CriaVazio()
 }
 
 // nascimento verifica se a data está no formato válido (YYYY-MM-DD) e se a data
@@ -41,7 +41,7 @@ func nome(nome string) error {
 // nessa função, mas essa margem é pequena (algumas horas, possivelmente alguns
 // dias, dependendo de mudanças específicas de fusos horários) e pode ser
 // ignorada.
-func nascimento(data string) error {
+func nascimento(data string) erros.Erros {
 	dataTime, err := time.Parse("2006-01-02", data)
 	if err != nil {
 		return ErrNascimentoInvalido
@@ -50,14 +50,14 @@ func nascimento(data string) error {
 	if dataTime.After(agora) {
 		return ErrNascimentoInvalido
 	}
-	return nil
+	return erros.CriaVazio()
 }
 
 // validacaoMatchSimples executa uma validação básica com um regex passado como
 // argumento. Retorna o erro gerado pela função do regex, caso houve algum, ou o
 // erro passado por argumento para essa função no caso de o regex não bater com
 // o dado passado.
-func validacaoMatchSimples(s string, reg string, e error) error {
+func validacaoMatchSimples(s string, reg string, e erros.Erros) erros.Erros {
 	matched, err := regexp.MatchString(reg, s)
 	if err != nil {
 		return erros.CriaInternoPadrao(err)
@@ -65,5 +65,5 @@ func validacaoMatchSimples(s string, reg string, e error) error {
 	if !matched {
 		return e
 	}
-	return nil
+	return erros.CriaVazio()
 }
