@@ -3,13 +3,13 @@
 // objeto que implementa a interface 'error' comum. Assim, pode-se diferenciar
 // entre erros externos e internos ao servidor, armazenar múltiplos erros em um
 // só objeto de erros, etc.
-// Esse pacote sempre retorna e aceita valores que implementam a interface
-// 'error', mas opera principalmente em valores do tipo struct 'Erros'.
+// Todas as funções resultam em um objeto do tipo 'Erros'. Esse objeto possui
+// uma slice de strings para armazenar múltiplas mensagens de erros, portanto,
+// não é possível realizar comparações com os objetos em si.
 package erros
 
 import (
 	"encoding/json"
-	"errors"
 	"log"
 	"net/http"
 )
@@ -42,7 +42,7 @@ type Erros struct {
 }
 
 // Cria gera uma nova estrutura 'Erros'
-func Cria(interno bool, statusCode int, msg string) error {
+func Cria(interno bool, statusCode int, msg string) Erros {
 	msgs := make([]string, 1)
 	msgs[0] = msg
 	return Erros{interno: interno, statusCode: statusCode, msg: msgs}
@@ -51,13 +51,13 @@ func Cria(interno bool, statusCode int, msg string) error {
 // CriaVazio gera uma nova estrutura 'Erros' sem uma mensagens de erros. Útil
 // para preparar para uma possível lista de erros. O erro criado não é interno
 // e possui statusCode 0.
-func CriaVazio() error {
+func CriaVazio() Erros {
 	return Erros{interno: false, statusCode: 0, msg: []string{}}
 }
 
 // CriaInternoPadrao cria uma estrutura 'Erros' com interno = true, statusCode =
 // 500 e a mesma mensagem de erro que o erro passado
-func CriaInternoPadrao(err error) error {
+func CriaInternoPadrao(err error) Erros {
 	msgs := make([]string, 1)
 	msgs[0] = err.Error()
 	return Erros{interno: true, statusCode: http.StatusInternalServerError, msg: msgs}
@@ -87,27 +87,27 @@ func (e Erros) Error() string {
 // a mensagem de erro idêntica à do objeto.
 // Se o erro não for uma struct 'Erros', retorna os valores padrões: erro
 // interno, status code 500 e a mensagem do próprio erro.
-func Abre(e error) (bool, int, error) {
+func Abre(e error) (bool, int, Erros) {
 	objErros, sucesso := e.(Erros)
 	if !sucesso {
 		log.Print(e)
-		return true, http.StatusInternalServerError, e
+		return true, http.StatusInternalServerError, CriaInternoPadrao(e)
 	}
 	if objErros.interno {
 		log.Print(e)
 	}
-	return objErros.interno, objErros.statusCode, errors.New(objErros.Error())
+	return objErros.interno, objErros.statusCode, objErros
 }
 
 // Adiciona insere um erro na lista de erros da struct. Se o erro não for do
 // tipo Erros, não adiciona e simplesmente retorna o erro original.
-func Adiciona(e error, msg string) error {
+func Adiciona(e error, msg string) Erros {
 	if e == nil {
-		return nil
+		return CriaVazio()
 	}
 	objErros, sucesso := e.(Erros)
 	if !sucesso {
-		return e
+		return CriaInternoPadrao(e)
 	}
 	objErros.msg = append(objErros.msg, msg)
 	return objErros
@@ -117,21 +117,21 @@ func Adiciona(e error, msg string) error {
 // completamente e os erros não serão juntados. Se os dois forem internos, o
 // primeiro na ordem da lista de argumentos prevalece. Se os dois não forem
 // internos, o statusCode do primeiro prevalece e as mensagens são unidas.
-func JuntaErros(e1, e2 error) error {
+func JuntaErros(e1, e2 error) Erros {
 	// Retorna o único erro não-nil ou nil se um dos dois ou os dois forem nil
 	if e1 == nil {
-		return e2
+		return CriaInternoPadrao(e2)
 	} else if e2 == nil {
-		return e1
+		return CriaInternoPadrao(e1)
 	}
 	// Verifica se os objetos são do tipo 'Erros'
 	objErros1, sucesso1 := e1.(Erros)
 	if !sucesso1 {
-		return e1
+		return CriaInternoPadrao(e1)
 	}
 	objErros2, sucesso2 := e2.(Erros)
 	if !sucesso2 {
-		return e2
+		return CriaInternoPadrao(e2)
 	}
 	// Verifica se um dos dois é interno
 	if objErros1.interno {
@@ -144,11 +144,16 @@ func JuntaErros(e1, e2 error) error {
 	return objErros1
 }
 
-// Transforma retorna o objeto em forma de 'error' caso não esteja vazio (erro
-// não interno e sem mensagens de erros) e 'nil' caso esteja.
-func (e Erros) Transforma() error {
-	if !e.interno && len(e.msg) == 0 {
-		return nil
+// Vazio verifica se o erro existe de fato ou se é apenas uma estrutura vazia
+// e nenhum erro ocorreu (identificado por statusCode = 0 e lista de mensagens
+// vazia).
+func Vazio(e error) bool {
+	if e == nil {
+		return true
 	}
-	return e
+	objErros, sucesso := e.(Erros)
+	if !sucesso {
+		return false
+	}
+	return objErros.statusCode == 0 && len(objErros.msg) == 0
 }

@@ -12,8 +12,7 @@ func TestCria(t *testing.T) {
 	msg := make([]string, 1)
 	msg[0] = "mensagem de teste de erro"
 	original := Erros{interno: true, statusCode: 200, msg: msg}
-	g := Cria(true, 200, msg[0])
-	gerado := g.(Erros)
+	gerado := Cria(true, 200, msg[0])
 
 	if original.interno != gerado.interno ||
 		original.statusCode != gerado.statusCode ||
@@ -24,8 +23,7 @@ func TestCria(t *testing.T) {
 }
 
 func TestCriaVazio(t *testing.T) {
-	err := CriaVazio()
-	e := err.(Erros)
+	e := CriaVazio()
 	if e.interno != false ||
 		len(e.msg) != 0 ||
 		e.statusCode != 0 {
@@ -35,8 +33,7 @@ func TestCriaVazio(t *testing.T) {
 
 func TestCriaInternoPadrao(t *testing.T) {
 	err := errors.New("mensagem de teste de erro")
-	g := CriaInternoPadrao(err)
-	gerado := g.(Erros)
+	gerado := CriaInternoPadrao(err)
 
 	if gerado.Error() != err.Error() {
 		t.Errorf("Mensagens de erros diferentes.\nGerado: %v\nOriginal: %v",
@@ -75,7 +72,7 @@ func TestAbre(t *testing.T) {
 	// Erro que não é struct 'Erros' (com logging)
 	e := errors.New("erro teste")
 	interno, statusCode, err := Abre(e)
-	if e != err ||
+	if e.Error() != err.Error() ||
 		interno != true ||
 		statusCode != 500 {
 		t.Errorf("Valores gerados inválidos: %v / %v / %v", interno, statusCode, err)
@@ -83,9 +80,8 @@ func TestAbre(t *testing.T) {
 }
 
 func TestAdiciona(t *testing.T) {
-	err := Cria(true, 500, "erro 1")
-	err = Adiciona(err, "erro 2")
-	e := err.(Erros)
+	e := Cria(true, 500, "erro 1")
+	e = Adiciona(e, "erro 2")
 	if e.msg[0] != "erro 1" || e.msg[1] != "erro 2" {
 		t.Errorf("Mensagens de erros inesperadas.\n1: %v\n2: %v", e.msg[0], e.msg[1])
 	}
@@ -93,32 +89,30 @@ func TestAdiciona(t *testing.T) {
 
 func TestJuntaErros(t *testing.T) {
 	// Testa união de dois erros não-internos
-	e1 := Cria(false, 500, "e1").(Erros)
-	e2 := Cria(false, 500, "e2").(Erros)
+	e1 := Cria(false, 500, "e1")
+	e2 := Cria(false, 500, "e2")
 	eResultado := JuntaErros(e1, e2)
 	if r := eResultado.Error(); r != `["e1","e2"]` {
 		t.Errorf("União de erros teve resultado incorreto: %v", r)
 	}
 	// Se um dos erros for interno, o resultado deve ser ele mesmo
-	e3 := Cria(true, 400, "e3").(Erros)
+	e3 := Cria(true, 400, "e3")
 	eResultado = JuntaErros(e1, e3)
 	if r := eResultado.Error(); r != `e3` {
 		t.Errorf("União de erros teve resultado incorreto: %v", r)
 	}
 }
 
-func TestTransforma(t *testing.T) {
+func TestVazio(t *testing.T) {
 	// Erro vazio
-	err := CriaVazio()
-	e := err.(Erros)
-	if err := e.Transforma(); err != nil {
-		t.Errorf("Erro inesperado ao transformar erro: %v", err)
+	e := CriaVazio()
+	if !Vazio(e) {
+		t.Errorf("Erro diz que não está vazio quando está.")
 	}
 	// Erro com item
-	err = Adiciona(e, "erro 1")
-	e = err.(Erros)
-	if err := e.Transforma(); err == nil {
-		t.Errorf("Erro 'nil' quando não deveria ser: %v", e)
+	e = Adiciona(e, "erro 1")
+	if Vazio(e) {
+		t.Errorf("Erro diz que está vazio quando não está.")
 	}
 }
 
