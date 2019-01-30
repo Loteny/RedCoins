@@ -33,7 +33,7 @@ func TestCriaTabelas(t *testing.T) {
 	}
 
 	// Cria as tabelas
-	if err := CriaTabelas(); err != nil {
+	if err := criaTabelas(); err != nil {
 		t.Fatalf("Erro inesperado: %v", err)
 	}
 

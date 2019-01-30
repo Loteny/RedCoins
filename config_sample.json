@@ -1,0 +1,14 @@
+{
+    "database": {
+        "usuarioDb": "root",
+        "senhaDb": "",
+        "dbNome": "redcoins",
+        "testDbNome": "redcoins_teste",
+        "enderecoDb": "localhost:55555"
+    },
+    "redcoins-servidor": {
+        "addr": "0.0.0.0:8080",
+        "pem": "../src/github.com/loteny/redcoins/certs/server.pem",
+        "key": "../src/github.com/loteny/redcoins/certs/server.key"
+    }
+}

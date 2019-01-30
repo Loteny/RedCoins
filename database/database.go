@@ -3,9 +3,12 @@ package database
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
+	"log"
+	"os"
 	"strconv"
 
 	// Driver MySQL
@@ -15,18 +18,18 @@ import (
 // Configurações para o banco de dados
 var (
 	// Nome de usuário
-	usuarioDb = "root"
+	usuarioDb string
 	// Senha do usuário
 	//senha = "tvM@v:2gj@A')cH5"
-	senhaDb = ""
+	senhaDb string
 	// Nome do banco de dados
-	dbNome = "redcoins"
+	dbNome string
 	// Nome do banco de dados de testes
-	testDbNome = "redcoins_teste"
+	testDbNome string
 	// Endereço do bando de dados com port
-	enderecoDb = "localhost:55555"
+	enderecoDb string
 	// Data Source Name: string completa para conexão com o banco de dados
-	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + dbNome
+	dsn string
 )
 
 // Erros possíveis do módulo
@@ -54,33 +57,76 @@ type Transacao struct {
 	Dia      string  `json:"dia"`
 }
 
-// CriaTabelas cria as tabelas do banco de dados do servidor
-func CriaTabelas() error {
-	db, err := sql.Open("mysql", dsn)
+// config é a estrutura com as configurações do servidor
+type config struct {
+	Database struct {
+		UsuarioDb  string `json:"usuarioDb"`
+		SenhaDb    string `json:"senhaDb"`
+		DbNome     string `json:"dbNome"`
+		TestDbNome string `json:"testDbNome"`
+		EnderecoDb string `json:"enderecoDb"`
+	} `json:"database"`
+}
+
+// init lê o arquivo de configurações e configura o package corretamente
+func init() {
+	// Inicializa as configurações do módulo com o arquivo config.json
+	arquivoConfig, err := os.Open("config.json")
+	if err != nil {
+		log.Fatalf("Erro ao abrir arquivo de configurações da database: %s", err)
+	}
+	var c config
+	if err := json.NewDecoder(arquivoConfig).Decode(&c); err != nil {
+		log.Fatalf("Erro ao ler configurações da database: %s", err)
+	}
+	usuarioDb = c.Database.UsuarioDb
+	senhaDb = c.Database.SenhaDb
+	dbNome = c.Database.DbNome
+	testDbNome = c.Database.TestDbNome
+	enderecoDb = c.Database.EnderecoDb
+	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + dbNome
+	// Se o package estiver em modo de teste, altera o DSN
+	if flag.Lookup("test.v") != nil {
+		dbNome = testDbNome
+		dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
+	}
+}
+
+// CriaDatabase verifica se o banco de dados do servidor está criado. Se não
+// estiver, cria. Se estiver, verifica se o banco de dados possui alguma tabela.
+// Se possui, não faz nada e retorna nenhum erro. Se não possui, cria as tabelas
+// necessárias para operação do servidor.
+func CriaDatabase() error {
+	// Entra no MySQL sem banco de dados e verifica se o banco de dados do
+	// servidor existe
+	tempDSN := usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/"
+	db, err := sql.Open("mysql", tempDSN)
+	defer db.Close()
 	if err != nil {
 		return err
 	}
-
-	// Todo o banco de dados deve ser gerado em uma única transação
-	tx, err := db.Begin()
-	if err != nil {
+	// Verifica a quantidade de banco de dados com o nome do banco de dados do
+	// servidor (deve ser 0 ou 1)
+	var qtd uint
+	sqlCode := `SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name=?;`
+	if err := db.QueryRow(sqlCode, dbNome).Scan(&qtd); err != nil {
 		return err
 	}
-	// Criação das tabelas individualmente
-	if err := criaTabelaUsuario(tx); err != nil {
-		return err
+	// Cria o banco de dados se não existe
+	if qtd == 0 {
+		sqlCode := `CREATE DATABASE ` + dbNome + ` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
+		if _, err := db.Exec(sqlCode); err != nil {
+			return err
+		}
 	}
-	if err := criaTabelaTransacao(tx); err != nil {
-		return err
-	}
-
-	return tx.Commit()
+	return criaTabelas()
 }
 
 // InsereUsuario cria uma nova linha na tabela 'usuario'. Retorna
 // ErrUsuarioDuplicado se o usuário é repetido (mesmo e-mail)
 func InsereUsuario(usr *Usuario) error {
 	db, err := sql.Open("mysql", dsn)
+	defer db.Close()
 	if err != nil {
 		return err
 	}
@@ -110,6 +156,7 @@ func InsereUsuario(usr *Usuario) error {
 // partir de seu email. Se o usuário não existe, retorna ErrUsuarioNaoExiste.
 func AdquireSenhaHashed(email string) ([]byte, error) {
 	db, err := sql.Open("mysql", dsn)
+	defer db.Close()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -138,6 +185,7 @@ func AdquireSenhaHashed(email string) ([]byte, error) {
 // valores reais A data deve estar no formato "YYYY-MM-DD".
 func InsereTransacao(email string, compra bool, bitcoins float64, preco float64, data string) error {
 	db, err := sql.Open("mysql", dsn)
+	defer db.Close()
 	if err != nil {
 		return err
 	}
@@ -174,6 +222,7 @@ func InsereTransacao(email string, compra bool, bitcoins float64, preco float64,
 // identificado pelo seu e-mail na forma []Transacao
 func AdquireTransacoesDeUsuario(email string) ([]Transacao, error) {
 	db, err := sql.Open("mysql", dsn)
+	defer db.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -211,6 +260,7 @@ func AdquireTransacoesDeUsuario(email string) ([]Transacao, error) {
 // dia no formato "YYYY-MM-DD" e retorna uma lista de Transacao
 func AdquireTransacoesEmDia(dia string) ([]Transacao, error) {
 	db, err := sql.Open("mysql", dsn)
+	defer db.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -242,6 +292,52 @@ func AdquireTransacoesEmDia(dia string) ([]Transacao, error) {
 	}
 
 	return transacoes, nil
+}
+
+// verificaSemTabelas verifica se o banco de dados está sem nenhum tabela.
+// Retorna 'true' caso esteja ou 'false' se existe alguma tabela no banco
+// de dados.
+func verificaSemTabelas(db *sql.DB) (bool, error) {
+	var qtd uint
+	sqlCode := `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=?;`
+	if err := db.QueryRow(sqlCode, dbNome).Scan(&qtd); err != nil {
+		return false, err
+	}
+	return qtd == 0, nil
+}
+
+// criaTabelas cria as tabelas do banco de dados do servidor se o banco de dados
+// não tiver nenhuma tabela presente. Se tiver, retorna sem erros (assume-se que
+// as tabelas foram criadas corretamente). Se for necessário atualizar o banco
+// de dados, é necessário fazê-lo manualmente.
+func criaTabelas() error {
+	db, err := sql.Open("mysql", dsn)
+	defer db.Close()
+	if err != nil {
+		return err
+	}
+
+	// Verifica se o banco de dados está vazio
+	if vazio, err := verificaSemTabelas(db); err != nil {
+		return err
+	} else if !vazio {
+		return nil
+	}
+
+	// Todo o banco de dados deve ser gerado em uma única transação
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	// Criação das tabelas individualmente
+	if err := criaTabelaUsuario(tx); err != nil {
+		return err
+	}
+	if err := criaTabelaTransacao(tx); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // criaTabelaUsuario cria a tabela 'usuario' no banco de dados que armazena
@@ -377,11 +473,4 @@ func insereLinhaTransacao(tx *sql.Tx, usuario uint, compra bool, preco float64, 
 		return err
 	}
 	return nil
-}
-
-// init altera o DSN para usar o banco de dados de teste
-func init() {
-	if flag.Lookup("test.v") != nil {
-		dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
-	}
 }
