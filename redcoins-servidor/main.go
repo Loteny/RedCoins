@@ -27,8 +27,8 @@ func escutaConexoes() {
 // pedida do servidor
 func estabeleceRotas() {
 	http.HandleFunc("/cadastro", RotaCadastro)
-	// http.HandleFunc("/compra", nil)
-	// http.HandleFunc("/venda", nil)
+	http.HandleFunc("/compra", RotaCompra)
+	http.HandleFunc("/venda", RotaVenda)
 }
 
 func main() {

@@ -15,7 +15,6 @@ import (
 
 // Lista de possíveis erros do módulo
 var (
-	ErrMetodoPost         = erros.Cria(false, 405, "")
 	ErrEmailInvalido      = erros.Cria(false, 400, "email invalido")
 	ErrSenhaInvalida      = erros.Cria(false, 400, "senha invalida")
 	ErrSenhaMuitoLonga    = erros.Cria(false, 400, "senha muito longa")
@@ -61,10 +60,6 @@ func RealizaCadastroRequestHTTP(r *http.Request) error {
 // VerificaLoginRequestHTTP verifica se o usuário existe e a senha está correta
 // a partir de um request HTTP. O request deve ser do tipo POST.
 func VerificaLoginRequestHTTP(r *http.Request) (bool, error) {
-	// Verifica o método do request
-	if r.Method != "POST" {
-		return false, ErrMetodoPost
-	}
 	// Adquire os dados do request
 	if err := comunicacao.RealizaParseForm(r); err != nil {
 		return false, err
@@ -76,14 +71,10 @@ func VerificaLoginRequestHTTP(r *http.Request) (bool, error) {
 }
 
 // ValidaDadosCadastroRequestHTTP valida os dados cadastrais apropriados
-// recebidos no request HTTP. O request deve ser do tipo POST, caso contrário,
-// ocorrerá o erro HTTP de status code 405. Após adquirir os dados do request, a
-// função chama validaDadosCadastro para validar e limpar os dados
+// recebidos no request HTTP. O request deve ser do tipo POST. Após adquirir os
+// dados do request, a função chama validaDadosCadastro para validar e limpar os
+// dados
 func validaDadosCadastroRequestHTTP(r *http.Request) (dados dadosCadastrais, err error) {
-	// Verifica o método do request
-	if r.Method != "POST" {
-		return dadosCadastrais{}, ErrMetodoPost
-	}
 	// Adquire os dados do request
 	if err := comunicacao.RealizaParseForm(r); err != nil {
 		return dadosCadastrais{}, err
