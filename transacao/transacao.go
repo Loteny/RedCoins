@@ -13,7 +13,6 @@ import (
 
 // Lista de possíveis erros do módulo
 var (
-	ErrMetodoPost        = erros.Cria(false, 405, "")
 	ErrQtdInvalida       = erros.Cria(false, 400, "qtd de bitcoins inválida")
 	ErrSaldoInsuficiente = erros.Cria(false, 400, database.ErrSaldoInsuficiente.Error())
 )
@@ -47,13 +46,10 @@ func transacaoHTTP(r *http.Request, compra bool) error {
 	return nil
 }
 
-// validaDadosTransacao verifica se o pedido foi feito em POST e verifica se a
-// quantidade de Bitcoins a ser comprada ou vendida é válida
+// validaDadosTransacao verifica se a quantidade de Bitcoins a ser comprada ou
+// vendida é válida e retorna o e-mail do usuário e a quantidade de Bitcoins
+// para transação.
 func validaDadosTransacao(r *http.Request) (string, float64, error) {
-	// Verifica o método do request
-	if r.Method != "POST" {
-		return "", 0, ErrMetodoPost
-	}
 	// Adquire os dados do request
 	if err := comunicacao.RealizaParseForm(r); err != nil {
 		return "", 0, err
