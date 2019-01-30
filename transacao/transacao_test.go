@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/loteny/redcoins/erros"
 )
 
 func TestCompraHTTP(t *testing.T) {
@@ -19,7 +21,7 @@ func TestCompraHTTP(t *testing.T) {
 	// Função que vai chamar a função a ser testada e tratar seu retorno
 	rotaHTTP := func(w http.ResponseWriter, r *http.Request) {
 		err := CompraHTTP(r)
-		if err != nil {
+		if !erros.Vazio(err) {
 			t.Errorf("Erro inesperado na transação: %v", err)
 		}
 	}
@@ -30,7 +32,7 @@ func TestCompraHTTP(t *testing.T) {
 	// Função que vai chamar a função a ser testada e tratar seu retorno
 	rotaHTTP = func(w http.ResponseWriter, r *http.Request) {
 		err := CompraHTTP(r)
-		if err != ErrQtdInvalida {
+		if err.Error() != ErrQtdInvalida.Error() {
 			t.Errorf("Erro inesperado na transação: %v", err)
 		}
 	}
@@ -48,7 +50,7 @@ func TestVendaHTTP(t *testing.T) {
 	// Função que vai chamar a função a ser testada e tratar seu retorno
 	rotaHTTP := func(w http.ResponseWriter, r *http.Request) {
 		err := VendaHTTP(r)
-		if err != nil {
+		if !erros.Vazio(err) {
 			t.Errorf("Erro inesperado na transação: %v", err)
 		}
 	}
@@ -59,7 +61,7 @@ func TestVendaHTTP(t *testing.T) {
 	// Função que vai chamar a função a ser testada e tratar seu retorno
 	rotaHTTP = func(w http.ResponseWriter, r *http.Request) {
 		err := VendaHTTP(r)
-		if err != ErrQtdInvalida {
+		if err.Error() != ErrQtdInvalida.Error() {
 			t.Errorf("Erro inesperado na transação: %v", err)
 		}
 	}
@@ -70,7 +72,7 @@ func TestVendaHTTP(t *testing.T) {
 	// Função que vai chamar a função a ser testada e tratar seu retorno
 	rotaHTTP = func(w http.ResponseWriter, r *http.Request) {
 		err := VendaHTTP(r)
-		if err != ErrSaldoInsuficiente {
+		if err.Error() != ErrSaldoInsuficiente.Error() {
 			t.Errorf("Erro inesperado na transação: %v", err)
 		}
 	}
