@@ -48,13 +48,23 @@ func RotaVenda(w http.ResponseWriter, r *http.Request) {
 }
 
 // RotaRelatorioDia retorna todas as transações feitas em um determinado dia
-// no campo "data"
+// no campo "data" (YYYY-MM-DD)
 func RotaRelatorioDia(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
 		return
 	}
 	respostaPadraoAuthComRetorno(w, r, http.StatusCreated, transacao.TransacoesDiaHTTP)
+}
+
+// RotaRelatorioUsuario retorna todas as transações feitas em um determinado
+// usuário a partir de seu e-mail no campo "email_transacoes"
+func RotaRelatorioUsuario(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
+		return
+	}
+	respostaPadraoAuthComRetorno(w, r, http.StatusCreated, transacao.TransacoesUsuarioHTTP)
 }
 
 // respostaPadrao chamada a função 'f' e envia a resposta HTTP adequada
