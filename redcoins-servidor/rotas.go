@@ -47,6 +47,16 @@ func RotaVenda(w http.ResponseWriter, r *http.Request) {
 	respostaPadraoAutenticada(w, r, http.StatusCreated, transacao.VendaHTTP)
 }
 
+// RotaRelatorioDia retorna todas as transações feitas em um determinado dia
+// no campo "data"
+func RotaRelatorioDia(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
+		return
+	}
+	respostaPadraoAuthComRetorno(w, r, http.StatusCreated, transacao.TransacoesDiaHTTP)
+}
+
 // respostaPadrao chamada a função 'f' e envia a resposta HTTP adequada
 // dependendo do resultado da função, considerando que a função retorna um
 // erros.Erros.
@@ -67,6 +77,23 @@ func respostaPadrao(w http.ResponseWriter, r *http.Request, statusSucesso int, f
 	comunicacao.Responde(w, http.StatusCreated, []byte{})
 }
 
+// respostaPadraoComRetorno funciona da mesma maneira que respostaPadrao, mas a
+// função 'f' retorna uma array de bytes a ser enviada para o cliente em caso de
+// sucesso da operação
+func respostaPadraoComRetorno(w http.ResponseWriter, r *http.Request, statusSucesso int, f func(*http.Request) ([]byte, erros.Erros)) {
+	resposta, err := f(r)
+	if !erros.Vazio(err) {
+		interno, status, _ := erros.Abre(err)
+		if !interno {
+			comunicacao.RespondeErro(w, status, err)
+			return
+		}
+		comunicacao.Responde(w, status, []byte{})
+		return
+	}
+	comunicacao.Responde(w, http.StatusCreated, resposta)
+}
+
 // respostaPadraoAutenticada é idêntica à respostaPadrao, mas autentica o
 // usuário com autenticaUsuarioPost antes de proceder às operações
 func respostaPadraoAutenticada(w http.ResponseWriter, r *http.Request, statusSucesso int, f func(*http.Request) erros.Erros) {
@@ -83,6 +110,25 @@ func respostaPadraoAutenticada(w http.ResponseWriter, r *http.Request, statusSuc
 		return
 	}
 	respostaPadrao(w, r, statusSucesso, f)
+}
+
+// respostaPadraoComRetorno funciona da mesma maneira que
+// respostaPadraoAutenticada, mas a função 'f' retorna uma array de bytes a ser
+// enviada para o cliente em caso de sucesso da operação
+func respostaPadraoAuthComRetorno(w http.ResponseWriter, r *http.Request, statusSucesso int, f func(*http.Request) ([]byte, erros.Erros)) {
+	if autenticado, err := autenticaUsuarioPost(r); !erros.Vazio(err) {
+		interno, status, _ := erros.Abre(err)
+		if !interno {
+			comunicacao.RespondeErro(w, status, err)
+			return
+		}
+		comunicacao.Responde(w, status, []byte{})
+		return
+	} else if !autenticado {
+		comunicacao.Responde(w, http.StatusForbidden, []byte{})
+		return
+	}
+	respostaPadraoComRetorno(w, r, statusSucesso, f)
 }
 
 // autenticaUsuarioPost verifica se o usuário é cadastrado e se a senha está
