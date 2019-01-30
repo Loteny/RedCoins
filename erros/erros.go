@@ -157,3 +157,15 @@ func Vazio(e error) bool {
 	}
 	return objErros.statusCode == 0 && len(objErros.msg) == 0
 }
+
+// Lista retorna uma lista de strings que são as mensagens de erros do objeto
+func Lista(e error) []string {
+	if e == nil {
+		return []string{}
+	}
+	objErros, sucesso := e.(Erros)
+	if !sucesso {
+		return []string{e.Error()}
+	}
+	return objErros.msg
+}

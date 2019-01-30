@@ -116,6 +116,15 @@ func TestVazio(t *testing.T) {
 	}
 }
 
+func TestLista(t *testing.T) {
+	e := Cria(false, 400, "err1")
+	e = Adiciona(e, "err2")
+	lista := Lista(e)
+	if len(lista) != 2 || lista[0] != "err1" || lista[1] != "err2" {
+		t.Errorf("Valor incorreto da lista de erros: %v", lista)
+	}
+}
+
 // testAbre é a função base para os testes da função Abre. Outras funções de
 // teste da função Abre podem derivar dessa função
 func testAbre(t *testing.T, interno bool) bytes.Buffer {

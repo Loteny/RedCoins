@@ -30,8 +30,8 @@ func RespondeSucesso(w http.ResponseWriter, r []byte) error {
 
 // RespondeErro envia a mensagem de erro passada para função em JSON
 func RespondeErro(w http.ResponseWriter, statusCode int, e erros.Erros) error {
-	m := make(map[string]string)
-	m["erros"] = e.Error()
+	m := make(map[string][]string)
+	m["erros"] = erros.Lista(e)
 	msg, err := json.Marshal(m)
 	if err != nil {
 		log.Printf("comunicacao: RespondeErro: %s", err)
