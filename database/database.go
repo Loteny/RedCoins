@@ -31,9 +31,9 @@ var (
 
 // Erros possíveis do módulo
 var (
-	ErrUsuarioDuplicado  = errors.New("E-mail já cadastrado")
-	ErrUsuarioNaoExiste  = errors.New("Usuário não existente")
-	ErrSaldoInsuficiente = errors.New("Saldo insuficiente")
+	ErrUsuarioDuplicado  = errors.New("email_ja_cadastrado")
+	ErrUsuarioNaoExiste  = errors.New("usuario_nao_existente")
+	ErrSaldoInsuficiente = errors.New("saldo_insuficiente")
 )
 
 // Usuario é a estrutura para a tabela 'usuario'.
@@ -51,7 +51,7 @@ type Transacao struct {
 	compra   bool
 	creditos float64
 	bitcoins float64
-	tempo    string
+	dia      string
 }
 
 // CriaTabelas cria as tabelas do banco de dados do servidor
@@ -131,11 +131,12 @@ func AdquireSenhaHashed(email string) ([]byte, error) {
 
 // InsereTransacao cria uma nova transação no banco de dados a partir do e-mail
 // de um usuário, do tipo da transação (compra ou venda), a quantidade de
-// BitCoins a ser comprada ou vendida e o valor pago ou recebido em reais pela
-// transação. A quantidade de BitCoins e o valor em reais devem ser números
-// inteiros: os 10 primeiros dígitos do valor em reais e os 8 primeiro dígitos.
-// da quantidade de BitCoins formam as partes decimais de seus valores reais
-func InsereTransacao(email string, compra bool, bitcoins float64, preco float64) error {
+// BitCoins a ser comprada ou vendida, o valor pago ou recebido em reais pela
+// transação e a data da transação. A quantidade de BitCoins e o valor em reais
+// devem ser números inteiros: os 10 primeiros dígitos do valor em reais e os 8
+// primeiro dígitos. da quantidade de BitCoins formam as partes decimais de seus
+// valores reais A data deve estar no formato "YYYY-MM-DD".
+func InsereTransacao(email string, compra bool, bitcoins float64, preco float64, data string) error {
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return err
@@ -159,7 +160,7 @@ func InsereTransacao(email string, compra bool, bitcoins float64, preco float64)
 	}
 
 	// Insere a transação no banco de dados
-	if err := insereLinhaTransacao(tx, usrID, compra, preco, bitcoins); err != nil {
+	if err := insereLinhaTransacao(tx, usrID, compra, preco, bitcoins, data); err != nil {
 		return err
 	}
 	if err := tx.Commit(); err != nil {
@@ -178,7 +179,7 @@ func AdquireTransacoesDeUsuario(email string) ([]Transacao, error) {
 	}
 
 	sqlCode := `SELECT
-		t.compra, t.creditos, t.bitcoins, t.tempo
+		t.compra, t.creditos, t.bitcoins, t.dia
 		FROM usuario AS u
 		INNER JOIN transacao AS t ON t.usuario_id = u.id
 		WHERE u.email=?;`
@@ -193,7 +194,7 @@ func AdquireTransacoesDeUsuario(email string) ([]Transacao, error) {
 	for rows.Next() {
 		tr := Transacao{usuario: email}
 		compra := make([]uint8, 1)
-		if err := rows.Scan(&compra, &tr.creditos, &tr.bitcoins, &tr.tempo); err != nil {
+		if err := rows.Scan(&compra, &tr.creditos, &tr.bitcoins, &tr.dia); err != nil {
 			return nil, err
 		}
 		tr.compra = compra[0] == 1
@@ -215,10 +216,10 @@ func AdquireTransacoesEmDia(dia string) ([]Transacao, error) {
 	}
 
 	sqlCode := `SELECT
-		u.email, t.compra, t.creditos, t.bitcoins, t.tempo
+		u.email, t.compra, t.creditos, t.bitcoins, t.dia
 		FROM transacao AS t
 		INNER JOIN usuario AS u ON u.id = t.usuario_id
-		WHERE DATE(t.tempo)=?;`
+		WHERE t.dia=?;`
 	rows, err := db.Query(sqlCode, dia)
 	if err != nil {
 		return nil, err
@@ -230,7 +231,7 @@ func AdquireTransacoesEmDia(dia string) ([]Transacao, error) {
 	for rows.Next() {
 		tr := Transacao{}
 		compra := make([]uint8, 1)
-		if err := rows.Scan(&tr.usuario, &compra, &tr.creditos, &tr.bitcoins, &tr.tempo); err != nil {
+		if err := rows.Scan(&tr.usuario, &compra, &tr.creditos, &tr.bitcoins, &tr.dia); err != nil {
 			return nil, err
 		}
 		tr.compra = compra[0] == 1
@@ -271,8 +272,8 @@ func criaTabelaUsuario(tx *sql.Tx) error {
 // O valor 'creditos' indica qual foi o valor em reais adquirido ou concedido
 // pelo usuário na transação, 'bitcoins' indica o mesmo para seu crédito de
 // BitCoins, e 'compra' indica se a transação foi uma compra ou venda de
-// BitCoins (0 = venda; 1 = compra). 'tempo' indica quando a transação foi
-// realizada (Unix Timestamp).
+// BitCoins (0 = venda; 1 = compra). 'dia' indica quando a transação foi
+// realizada (YYYY-MM-DD).
 func criaTabelaTransacao(tx *sql.Tx) error {
 	sqlCode := `CREATE TABLE transacao (
 		id INT(11) UNSIGNED AUTO_INCREMENT,
@@ -280,7 +281,7 @@ func criaTabelaTransacao(tx *sql.Tx) error {
 		compra BIT(1) NOT NULL,
 		creditos DECIMAL(18,9) NOT NULL,
 		bitcoins DECIMAL(15,8) NOT NULL,
-		tempo TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		dia DATE NOT NULL,
 		CONSTRAINT pk_transacao_id PRIMARY KEY (id),
 		CONSTRAINT fk_transacao_usuario_id
 			FOREIGN KEY (usuario_id)
@@ -289,7 +290,7 @@ func criaTabelaTransacao(tx *sql.Tx) error {
 	if _, err := tx.Exec(sqlCode); err != nil {
 		return err
 	}
-	// Adiciona uma index no ID do usuário e uma index na coluna de tempo para
+	// Adiciona uma index no ID do usuário e uma index na coluna de data para
 	// otimizar pesquisas
 	sqlCode = `ALTER TABLE transacao
 		ADD INDEX idx_transacao_usuario_id (usuario_id);`
@@ -297,7 +298,7 @@ func criaTabelaTransacao(tx *sql.Tx) error {
 		return err
 	}
 	sqlCode = `ALTER TABLE transacao
-		ADD INDEX idx_transacao_tempo (tempo);`
+		ADD INDEX idx_transacao_dia (dia);`
 	if _, err := tx.Exec(sqlCode); err != nil {
 		return err
 	}
@@ -362,17 +363,17 @@ func adquireSaldosUsuario(tx *sql.Tx, usrID uint) (float64, error) {
 
 // insereLinhaTransacao insere diretamente uma nova linha de transação no banco
 // de dados.
-func insereLinhaTransacao(tx *sql.Tx, usuario uint, compra bool, preco float64, bitcoins float64) error {
+func insereLinhaTransacao(tx *sql.Tx, usuario uint, compra bool, preco float64, bitcoins float64, data string) error {
 	sqlCode := `INSERT INTO
-	transacao (usuario_id, compra, creditos, bitcoins)
-	VALUES (?, ?, ?, ?);`
+	transacao (usuario_id, compra, creditos, bitcoins, dia)
+	VALUES (?, ?, ?, ?, ?);`
 	var intCompra uint8
 	if compra {
 		intCompra = 1
 	} else {
 		intCompra = 0
 	}
-	if _, err := tx.Exec(sqlCode, usuario, intCompra, fmt.Sprintf("%18.9f", preco), fmt.Sprintf("%15.8f", bitcoins)); err != nil {
+	if _, err := tx.Exec(sqlCode, usuario, intCompra, fmt.Sprintf("%18.9f", preco), fmt.Sprintf("%15.8f", bitcoins), data); err != nil {
 		return err
 	}
 	return nil

@@ -12,7 +12,7 @@ import (
 // menos 3 caracteres e no máximo 128 caracteres
 func email(email string) erros.Erros {
 	if utf8.RuneCountInString(email) < 3 || utf8.RuneCountInString(email) > 128 {
-		return ErrNomeInvalido
+		return ErrEmailInvalido
 	}
 	return validacaoMatchSimples(email, "^.+@.+$", ErrEmailInvalido)
 }

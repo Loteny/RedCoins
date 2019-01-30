@@ -18,6 +18,7 @@ func TestCompraHTTP(t *testing.T) {
 	form.Set("email", "teste@gmail.com")
 	form.Set("senha", "123456")
 	form.Set("qtd", "0.03")
+	form.Set("data", "2018-01-01")
 	// Função que vai chamar a função a ser testada e tratar seu retorno
 	rotaHTTP := func(w http.ResponseWriter, r *http.Request) {
 		err := CompraHTTP(r)
@@ -47,6 +48,7 @@ func TestVendaHTTP(t *testing.T) {
 	form.Set("email", "teste@gmail.com")
 	form.Set("senha", "123456")
 	form.Set("qtd", "0.0001")
+	form.Set("data", "2018-01-01")
 	// Função que vai chamar a função a ser testada e tratar seu retorno
 	rotaHTTP := func(w http.ResponseWriter, r *http.Request) {
 		err := VendaHTTP(r)

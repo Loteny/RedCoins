@@ -18,31 +18,33 @@ func RotaCadastro(w http.ResponseWriter, r *http.Request) {
 		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
 		return
 	}
-	respostaPadrao(w, r, cadastro.RealizaCadastroRequestHTTP)
+	respostaPadrao(w, r, http.StatusCreated, cadastro.RealizaCadastroRequestHTTP)
 }
 
 // RotaCompra realiza a compra de Bitcoins para um usuário a partir de um
 // request HTTPS. O pedido deve ser feito com o método POST e ter os campos
-// "email", "senha" e "qtd" preenchidos, sendo o último a quantidade de Bitcoins
-// a ser comprada, apenas dígitos e com o separado decimal sendo ponto.
+// "email", "senha", "qtd" e "data" preenchidos, sendo "qtd" a quantidade de
+// Bitcoins a ser comprada, apenas dígitos e com o separado decimal sendo ponto
+// e "data" no formato "YYYY-MM-DD".
 func RotaCompra(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
 		return
 	}
-	respostaPadrao(w, r, transacao.CompraHTTP)
+	respostaPadraoAutenticada(w, r, http.StatusCreated, transacao.CompraHTTP)
 }
 
 // RotaVenda realiza a venda de Bitcoins para um usuário a partir de um request
 // HTTPS. O pedido deve ser feito com o método POST e ter os campos "email",
-// "senha" e "qtd" preenchidos, sendo o último a quantidade de Bitcoins a ser
-// comprada, apenas dígitos e com o separado decimal sendo ponto.
+// "senha", "qtd" e "data" preenchidos, sendo "qtd" a quantidade de Bitcoins a
+// ser vendida, apenas dígitos e com o separado decimal sendo ponto e "data" no
+// formato "YYYY-MM-DD".
 func RotaVenda(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
 		return
 	}
-	respostaPadrao(w, r, transacao.VendaHTTP)
+	respostaPadraoAutenticada(w, r, http.StatusCreated, transacao.VendaHTTP)
 }
 
 // respostaPadrao chamada a função 'f' e envia a resposta HTTP adequada
@@ -51,7 +53,8 @@ func RotaVenda(w http.ResponseWriter, r *http.Request) {
 // Se o erro for interno, apenas o statusCode deve ser enviado para o cliente,
 // indicando um erro no servidor sem dar detalhes de seu funcionamento. Se não
 // for, os erros devem ser enviados para cliente.
-func respostaPadrao(w http.ResponseWriter, r *http.Request, f func(*http.Request) erros.Erros) {
+// statusSucesso indica o status code HTTP para caso de sucesso.
+func respostaPadrao(w http.ResponseWriter, r *http.Request, statusSucesso int, f func(*http.Request) erros.Erros) {
 	if err := f(r); !erros.Vazio(err) {
 		interno, status, _ := erros.Abre(err)
 		if !interno {
@@ -61,5 +64,29 @@ func respostaPadrao(w http.ResponseWriter, r *http.Request, f func(*http.Request
 		comunicacao.Responde(w, status, []byte{})
 		return
 	}
-	comunicacao.RespondeSucesso(w, []byte{})
+	comunicacao.Responde(w, http.StatusCreated, []byte{})
+}
+
+// respostaPadraoAutenticada é idêntica à respostaPadrao, mas autentica o
+// usuário com autenticaUsuarioPost antes de proceder às operações
+func respostaPadraoAutenticada(w http.ResponseWriter, r *http.Request, statusSucesso int, f func(*http.Request) erros.Erros) {
+	if autenticado, err := autenticaUsuarioPost(r); !erros.Vazio(err) {
+		interno, status, _ := erros.Abre(err)
+		if !interno {
+			comunicacao.RespondeErro(w, status, err)
+			return
+		}
+		comunicacao.Responde(w, status, []byte{})
+		return
+	} else if !autenticado {
+		comunicacao.Responde(w, http.StatusForbidden, []byte{})
+		return
+	}
+	respostaPadrao(w, r, statusSucesso, f)
+}
+
+// autenticaUsuarioPost verifica se o usuário é cadastrado e se a senha está
+// correta a partir dos campos POST "email" e "senha"
+func autenticaUsuarioPost(r *http.Request) (bool, erros.Erros) {
+	return cadastro.VerificaLoginRequestHTTP(r)
 }

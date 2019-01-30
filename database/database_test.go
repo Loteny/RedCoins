@@ -141,19 +141,19 @@ func TestInsereTransacao(t *testing.T) {
 	testLimpaTabela(t, db, "transacao")
 
 	// Compra inicial que não deve dar erros
-	err = InsereTransacao("teste@gmail.com", true, 0.00001, 0.00001)
+	err = InsereTransacao("teste@gmail.com", true, 0.00001, 0.00001, "2018-01-01")
 	if err != nil {
 		t.Fatalf("Erro inesperado na transação: %v", err)
 	}
 
 	// Venda que deve ocorrer corretamente
-	err = InsereTransacao("teste@gmail.com", false, 0.000005, 0.00001)
+	err = InsereTransacao("teste@gmail.com", false, 0.000005, 0.00001, "2018-01-01")
 	if err != nil {
 		t.Fatalf("Erro inesperado na transação: %v", err)
 	}
 
 	// Venda que deve acarretar em saldo insuficiente
-	err = InsereTransacao("teste@gmail.com", false, 0.00000501, 0.00001)
+	err = InsereTransacao("teste@gmail.com", false, 0.00000501, 0.00001, "2018-01-01")
 	if err != ErrSaldoInsuficiente {
 		t.Fatalf("Erro inesperado na transação: %v", err)
 	}
@@ -175,9 +175,9 @@ func TestAdquireTransacoesDeUsuario(t *testing.T) {
 		t.Errorf("Erro inesperado ao adquirir transações: %v", err)
 	}
 
-	valorEsperado := `[{teste@gmail.com true 1350 0.001 2018-03-07 02:57:33} ` +
-		`{teste@gmail.com false 253 0.00029 2018-03-07 22:04:21} ` +
-		`{teste@gmail.com false 563 0.00045 2018-08-27 10:44:02}]`
+	valorEsperado := `[{teste@gmail.com true 1350 0.001 2018-03-07} ` +
+		`{teste@gmail.com false 253 0.00029 2018-03-07} ` +
+		`{teste@gmail.com false 563 0.00045 2018-08-27}]`
 	if valorEsperado != fmt.Sprintf("%v", transacoes) {
 		t.Errorf("Lista de transações possui valor inesperado: %v", transacoes)
 	}
@@ -199,8 +199,8 @@ func TestAdquireTransacoesEmDia(t *testing.T) {
 		t.Errorf("Erro inesperado ao adquirir transações: %v", err)
 	}
 
-	valorEsperado := `[{teste@gmail.com true 1350 0.001 2018-03-07 02:57:33} ` +
-		`{teste@gmail.com false 253 0.00029 2018-03-07 22:04:21}]`
+	valorEsperado := `[{teste@gmail.com true 1350 0.001 2018-03-07} ` +
+		`{teste@gmail.com false 253 0.00029 2018-03-07}]`
 	if valorEsperado != fmt.Sprintf("%v", transacoes) {
 		t.Errorf("Lista de transações possui valor inesperado: %v", transacoes)
 	}
@@ -277,37 +277,23 @@ func testPopulaUsuario(t *testing.T, db *sql.DB) {
 // testPopulaTransacao popula a tabela de transações (dependente de dados
 // inseridos com a função testPopulaUsuario)
 func testPopulaTransacao(t *testing.T, db *sql.DB) {
+	// As duas primeiras transações do primeiro usuário serão no mesmo dia (07/03/2018)
+
 	// Primeiro usuário
 	// Compra de algumas Bitcoins
-	if err := InsereTransacao("teste@gmail.com", true, 0.001, 1350); err != nil {
+	if err := InsereTransacao("teste@gmail.com", true, 0.001, 1350, "2018-03-07"); err != nil {
 		t.Fatalf("Erro ao popular tabela de transações: %v", err)
 	}
 	// Vendas de algumas Bitcoins
-	if err := InsereTransacao("teste@gmail.com", false, 0.00029, 253); err != nil {
+	if err := InsereTransacao("teste@gmail.com", false, 0.00029, 253, "2018-03-07"); err != nil {
 		t.Fatalf("Erro ao popular tabela de transações: %v", err)
 	}
-	if err := InsereTransacao("teste@gmail.com", false, 0.00045, 563); err != nil {
+	if err := InsereTransacao("teste@gmail.com", false, 0.00045, 563, "2018-08-27"); err != nil {
 		t.Fatalf("Erro ao popular tabela de transações: %v", err)
 	}
 
 	// Uma simples transação para um segundo usuário
-	if err := InsereTransacao("segundo@hotmail.com", true, 0.023, 5826); err != nil {
-		t.Fatalf("Erro ao popular tabela de transações: %v", err)
-	}
-
-	// Altera as datas das transações
-	// As duas primeiras transações do primeiro usuário serão no mesmo dia (07/03/2018)
-	sqlCode := `UPDATE transacao SET tempo=? WHERE id=?;`
-	if _, err := db.Exec(sqlCode, "2018-03-07 02:57:33", 1); err != nil {
-		t.Fatalf("Erro ao popular tabela de transações: %v", err)
-	}
-	if _, err := db.Exec(sqlCode, "2018-03-07 22:04:21", 2); err != nil {
-		t.Fatalf("Erro ao popular tabela de transações: %v", err)
-	}
-	if _, err := db.Exec(sqlCode, "2018-08-27 10:44:02", 3); err != nil {
-		t.Fatalf("Erro ao popular tabela de transações: %v", err)
-	}
-	if _, err := db.Exec(sqlCode, "2019-01-02 13:33:33", 4); err != nil {
+	if err := InsereTransacao("segundo@hotmail.com", true, 0.023, 5826, "2019-01-02"); err != nil {
 		t.Fatalf("Erro ao popular tabela de transações: %v", err)
 	}
 }
