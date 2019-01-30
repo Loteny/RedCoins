@@ -88,6 +88,7 @@ func CriaDatabase() error {
 // ErrUsuarioDuplicado se o usuário é repetido (mesmo e-mail)
 func InsereUsuario(usr *Usuario) error {
 	db, err := sql.Open("mysql", dsn)
+	defer db.Close()
 	if err != nil {
 		return err
 	}
@@ -117,6 +118,7 @@ func InsereUsuario(usr *Usuario) error {
 // partir de seu email. Se o usuário não existe, retorna ErrUsuarioNaoExiste.
 func AdquireSenhaHashed(email string) ([]byte, error) {
 	db, err := sql.Open("mysql", dsn)
+	defer db.Close()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -145,6 +147,7 @@ func AdquireSenhaHashed(email string) ([]byte, error) {
 // valores reais A data deve estar no formato "YYYY-MM-DD".
 func InsereTransacao(email string, compra bool, bitcoins float64, preco float64, data string) error {
 	db, err := sql.Open("mysql", dsn)
+	defer db.Close()
 	if err != nil {
 		return err
 	}
@@ -181,6 +184,7 @@ func InsereTransacao(email string, compra bool, bitcoins float64, preco float64,
 // identificado pelo seu e-mail na forma []Transacao
 func AdquireTransacoesDeUsuario(email string) ([]Transacao, error) {
 	db, err := sql.Open("mysql", dsn)
+	defer db.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -218,6 +222,7 @@ func AdquireTransacoesDeUsuario(email string) ([]Transacao, error) {
 // dia no formato "YYYY-MM-DD" e retorna uma lista de Transacao
 func AdquireTransacoesEmDia(dia string) ([]Transacao, error) {
 	db, err := sql.Open("mysql", dsn)
+	defer db.Close()
 	if err != nil {
 		return nil, err
 	}
