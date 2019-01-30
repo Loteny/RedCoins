@@ -9,11 +9,14 @@ import (
 )
 
 func TestCria(t *testing.T) {
-	msg := "mensagem de teste de erro"
+	msg := make([]string, 1)
+	msg[0] = "mensagem de teste de erro"
 	original := Erros{interno: true, statusCode: 200, msg: msg}
-	gerado := Cria(true, 200, msg)
+	gerado := Cria(true, 200, msg[0])
 
-	if original != gerado {
+	if original.interno != gerado.interno ||
+		original.statusCode != gerado.statusCode ||
+		original.msg[0] != gerado.msg[0] {
 		t.Errorf("Estruturas diferentes.\nGerado: %#v\nOriginal: %#v",
 			gerado, original)
 	}
@@ -38,7 +41,7 @@ func TestCriaInternoPadrao(t *testing.T) {
 
 func TestError(t *testing.T) {
 	msg := "mensagem de teste de erro"
-	e := Erros{interno: true, statusCode: 200, msg: msg}
+	e := Cria(true, 500, msg)
 	msgRecebida := e.Error()
 
 	if msgRecebida != msg {
@@ -60,17 +63,6 @@ func TestAbreExterno(t *testing.T) {
 	}
 }
 
-func TestPadrao(t *testing.T) {
-	erroNormal := errors.New("mensagem de teste de erro")
-	e := Erros{interno: true, statusCode: 200, msg: erroNormal.Error()}
-	erroRecebido := e.Padrao()
-
-	if erroRecebido.Error() != erroNormal.Error() {
-		t.Logf("Esperado: %v\nObtido: %v", erroNormal, erroRecebido)
-		t.Fail()
-	}
-}
-
 // testAbre é a função base para os testes da função Abre. Outras funções de
 // teste da função Abre podem derivar dessa função
 func testAbre(t *testing.T, interno bool) bytes.Buffer {
@@ -80,11 +72,17 @@ func testAbre(t *testing.T, interno bool) bytes.Buffer {
 	defer func() { log.SetOutput(os.Stderr) }()
 
 	erroNormal := errors.New("mensagem de teste de erro")
-	e := Erros{interno: interno, statusCode: 200, msg: erroNormal.Error()}
-	internoRecebido, statusCode, erroRecebido := e.Abre()
+	e := Cria(interno, 200, erroNormal.Error())
+	internoRecebido, statusCode, erroRecebido := Abre(e)
 
-	if erroRecebido.Error() != erroNormal.Error() {
-		t.Errorf("Mensagem esperada: %v\nObtida: %v", erroNormal, erroRecebido)
+	if interno {
+		if erroRecebido.Error() != erroNormal.Error() {
+			t.Errorf("Mensagem esperada: %v\nObtida: %v", erroNormal, erroRecebido)
+		}
+	} else {
+		if erroRecebido.Error() != "[\""+erroNormal.Error()+"\"]" {
+			t.Errorf("Mensagem esperada: %v\nObtida: %v", erroNormal, erroRecebido)
+		}
 	}
 	if internoRecebido != interno {
 		t.Errorf("Valor de 'interno' incorreto (%v, deveria ser %v)",
