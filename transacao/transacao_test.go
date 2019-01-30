@@ -37,6 +37,46 @@ func TestCompraHTTP(t *testing.T) {
 	testRealizaRequestHTTPPostForm(t, form, rotaHTTP)
 }
 
+// Por enquanto, para realizar esse teste corretamente, certifique-se de que o
+// usuário possui mais do que 0.0001 BTC.
+func TestVendaHTTP(t *testing.T) {
+	// Formulário válido
+	form := url.Values{}
+	form.Set("email", "teste@gmail.com")
+	form.Set("senha", "123456")
+	form.Set("qtd", "0.0001")
+	// Função que vai chamar a função a ser testada e tratar seu retorno
+	rotaHTTP := func(w http.ResponseWriter, r *http.Request) {
+		err := VendaHTTP(r)
+		if err != nil {
+			t.Errorf("Erro inesperado na transação: %v", err)
+		}
+	}
+	testRealizaRequestHTTPPostForm(t, form, rotaHTTP)
+
+	// Quantidade inválida
+	form.Set("qtd", "-2")
+	// Função que vai chamar a função a ser testada e tratar seu retorno
+	rotaHTTP = func(w http.ResponseWriter, r *http.Request) {
+		err := VendaHTTP(r)
+		if err != ErrQtdInvalida {
+			t.Errorf("Erro inesperado na transação: %v", err)
+		}
+	}
+	testRealizaRequestHTTPPostForm(t, form, rotaHTTP)
+
+	// Saldo insuficiente
+	form.Set("qtd", "100")
+	// Função que vai chamar a função a ser testada e tratar seu retorno
+	rotaHTTP = func(w http.ResponseWriter, r *http.Request) {
+		err := VendaHTTP(r)
+		if err != ErrSaldoInsuficiente {
+			t.Errorf("Erro inesperado na transação: %v", err)
+		}
+	}
+	testRealizaRequestHTTPPostForm(t, form, rotaHTTP)
+}
+
 // testRealizaRequestHTTPPostForm é uma função auxiliar para geração de requests
 // HTTP com formulário POST
 func testRealizaRequestHTTPPostForm(t *testing.T, form url.Values,

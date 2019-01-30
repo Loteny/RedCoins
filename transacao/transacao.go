@@ -13,12 +13,22 @@ import (
 
 // Lista de possíveis erros do módulo
 var (
-	ErrMetodoPost  = erros.Cria(false, 405, "")
-	ErrQtdInvalida = erros.Cria(false, 400, "qtd de bitcoins inválida")
+	ErrMetodoPost        = erros.Cria(false, 405, "")
+	ErrQtdInvalida       = erros.Cria(false, 400, "qtd de bitcoins inválida")
+	ErrSaldoInsuficiente = erros.Cria(false, 400, database.ErrSaldoInsuficiente.Error())
 )
 
-// CompraHTTP realiza uma compra a partir de um request HTTP
+// CompraHTTP realiza uma compra de Bitcoins a partir de um request HTTP
 func CompraHTTP(r *http.Request) error {
+	return transacaoHTTP(r, true)
+}
+
+// VendaHTTP realiza uma venda de Bitcoins a partir de um request HTTP
+func VendaHTTP(r *http.Request) error {
+	return transacaoHTTP(r, false)
+}
+
+func transacaoHTTP(r *http.Request, compra bool) error {
 	// Adquire os dados da compra
 	email, qtd, err := validaDadosTransacao(r)
 	if err != nil {
@@ -29,7 +39,9 @@ func CompraHTTP(r *http.Request) error {
 		return err
 	}
 	// Insere no banco de dados
-	if err := database.InsereTransacao(email, true, qtd, preco); err != nil {
+	if err := database.InsereTransacao(email, compra, qtd, preco); err == database.ErrSaldoInsuficiente {
+		return ErrSaldoInsuficiente
+	} else if err != nil {
 		return err
 	}
 	return nil
