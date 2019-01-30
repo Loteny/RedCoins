@@ -54,11 +54,21 @@ type Transacao struct {
 	Dia      string  `json:"dia"`
 }
 
-// CriaTabelas cria as tabelas do banco de dados do servidor
+// CriaTabelas cria as tabelas do banco de dados do servidor se o banco de dados
+// não tiver nenhuma tabela presente. Se tiver, retorna sem erros (assume-se que
+// as tabelas foram criadas corretamente). Se for necessário atualizar o banco
+// de dados, é necessário fazê-lo manualmente.
 func CriaTabelas() error {
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return err
+	}
+
+	// Verifica se o banco de dados está vazio
+	if vazio, err := verificaSemTabelas(db); err != nil {
+		return err
+	} else if !vazio {
+		return nil
 	}
 
 	// Todo o banco de dados deve ser gerado em uma única transação
@@ -244,6 +254,18 @@ func AdquireTransacoesEmDia(dia string) ([]Transacao, error) {
 	return transacoes, nil
 }
 
+// verificaSemTabelas verifica se o banco de dados está sem nenhum tabela.
+// Retorna 'true' caso esteja ou 'false' se existe alguma tabela no banco
+// de dados.
+func verificaSemTabelas(db *sql.DB) (bool, error) {
+	var qtd uint
+	sqlCode := `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=?;`
+	if err := db.QueryRow(sqlCode, dbNome).Scan(&qtd); err != nil {
+		return false, err
+	}
+	return qtd == 0, nil
+}
+
 // criaTabelaUsuario cria a tabela 'usuario' no banco de dados que armazena
 // os dados cadastrais dos usuários
 func criaTabelaUsuario(tx *sql.Tx) error {
@@ -379,9 +401,11 @@ func insereLinhaTransacao(tx *sql.Tx, usuario uint, compra bool, preco float64, 
 	return nil
 }
 
-// init altera o DSN para usar o banco de dados de teste
+// init altera o DSN para usar o banco de dados de teste se a execução estiver
+// em modo de teste
 func init() {
 	if flag.Lookup("test.v") != nil {
+		dbNome = testDbNome
 		dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
 	}
 }

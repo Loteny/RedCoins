@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
+
+	"github.com/loteny/redcoins/database"
 )
 
 // addr especifica o endereço (incluindo porta) do servidor
@@ -34,5 +36,8 @@ func estabeleceRotas() {
 }
 
 func main() {
+	if err := database.CriaTabelas(); err != nil {
+		log.Fatalf("Erro ao tentar criar tabelas no banco de dados: %s", err)
+	}
 	escutaConexoes()
 }
