@@ -30,7 +30,7 @@ func RotaCompra(w http.ResponseWriter, r *http.Request) {
 		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
 		return
 	}
-	respostaPadrao(w, r, http.StatusCreated, transacao.CompraHTTP)
+	respostaPadraoAutenticada(w, r, http.StatusCreated, transacao.CompraHTTP)
 }
 
 // RotaVenda realiza a venda de Bitcoins para um usuário a partir de um request
@@ -42,7 +42,7 @@ func RotaVenda(w http.ResponseWriter, r *http.Request) {
 		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
 		return
 	}
-	respostaPadrao(w, r, http.StatusCreated, transacao.VendaHTTP)
+	respostaPadraoAutenticada(w, r, http.StatusCreated, transacao.VendaHTTP)
 }
 
 // respostaPadrao chamada a função 'f' e envia a resposta HTTP adequada
@@ -63,4 +63,28 @@ func respostaPadrao(w http.ResponseWriter, r *http.Request, statusSucesso int, f
 		return
 	}
 	comunicacao.Responde(w, http.StatusCreated, []byte{})
+}
+
+// respostaPadraoAutenticada é idêntica à respostaPadrao, mas autentica o
+// usuário com autenticaUsuarioPost antes de proceder às operações
+func respostaPadraoAutenticada(w http.ResponseWriter, r *http.Request, statusSucesso int, f func(*http.Request) erros.Erros) {
+	if autenticado, err := autenticaUsuarioPost(r); !erros.Vazio(err) {
+		interno, status, _ := erros.Abre(err)
+		if !interno {
+			comunicacao.RespondeErro(w, status, err)
+			return
+		}
+		comunicacao.Responde(w, status, []byte{})
+		return
+	} else if !autenticado {
+		comunicacao.Responde(w, http.StatusForbidden, []byte{})
+		return
+	}
+	respostaPadrao(w, r, statusSucesso, f)
+}
+
+// autenticaUsuarioPost verifica se o usuário é cadastrado e se a senha está
+// correta a partir dos campos POST "email" e "senha"
+func autenticaUsuarioPost(r *http.Request) (bool, erros.Erros) {
+	return cadastro.VerificaLoginRequestHTTP(r)
 }
