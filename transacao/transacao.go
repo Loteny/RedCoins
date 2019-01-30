@@ -5,6 +5,7 @@ package transacao
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/loteny/redcoins/comunicacao"
 	"github.com/loteny/redcoins/database"
@@ -15,6 +16,7 @@ import (
 // Lista de possíveis erros do módulo
 var (
 	ErrQtdInvalida       = erros.Cria(false, 400, "qtd_invalida")
+	ErrDataInvalida      = erros.Cria(false, 400, "data_invalida")
 	ErrSaldoInsuficiente = erros.Cria(false, 400, "saldo_insuficiente")
 )
 
@@ -30,7 +32,7 @@ func VendaHTTP(r *http.Request) erros.Erros {
 
 func transacaoHTTP(r *http.Request, compra bool) erros.Erros {
 	// Adquire os dados da compra
-	email, qtd, err := validaDadosTransacao(r)
+	email, qtd, data, err := validaDadosTransacao(r)
 	if !erros.Vazio(err) {
 		return err
 	}
@@ -39,7 +41,7 @@ func transacaoHTTP(r *http.Request, compra bool) erros.Erros {
 		return erros.CriaInternoPadrao(err2)
 	}
 	// Insere no banco de dados
-	if err := database.InsereTransacao(email, compra, qtd, preco); err == database.ErrSaldoInsuficiente {
+	if err := database.InsereTransacao(email, compra, qtd, preco, data); err == database.ErrSaldoInsuficiente {
 		return ErrSaldoInsuficiente
 	} else if err != nil {
 		return erros.CriaInternoPadrao(err)
@@ -48,25 +50,28 @@ func transacaoHTTP(r *http.Request, compra bool) erros.Erros {
 }
 
 // validaDadosTransacao verifica se a quantidade de Bitcoins a ser comprada ou
-// vendida é válida e retorna o e-mail do usuário e a quantidade de Bitcoins
-// para transação.
-func validaDadosTransacao(r *http.Request) (string, float64, erros.Erros) {
+// vendida é válida e retorna o e-mail do usuário, a quantidade de Bitcoins
+// para transação e a data da transação.
+func validaDadosTransacao(r *http.Request) (string, float64, string, erros.Erros) {
 	// Adquire os dados do request
 	if err := comunicacao.RealizaParseForm(r); err != nil {
-		return "", 0, erros.CriaInternoPadrao(err)
+		return "", 0, "", erros.CriaInternoPadrao(err)
 	}
 	email := r.PostFormValue("email")
 	qtd := r.PostFormValue("qtd")
+	data := r.PostFormValue("data")
 	// O e-mail já deve estar validado graças à autenticação. Mesmo que não
 	// esteja, se o e-mail foi inválido de alguma forma, o ID do usuário não
 	// será encontrado no banco de dados e nem o servidor nem o banco de dados
 	// passaram a malfuncionar.
 	fQtd, err := strconv.ParseFloat(qtd, 64)
-	if err == strconv.ErrSyntax || fQtd < 0 {
-		return "", 0, ErrQtdInvalida
-	} else if err != nil {
-		return "", 0, erros.CriaInternoPadrao(err)
+	if err != nil || fQtd < 0 {
+		return "", 0, "", ErrQtdInvalida
+	}
+	// Data da transação
+	if _, err := time.Parse("2006-01-02", data); err != nil {
+		return "", 0, "", ErrDataInvalida
 	}
 
-	return email, fQtd, erros.CriaVazio()
+	return email, fQtd, data, erros.CriaVazio()
 }

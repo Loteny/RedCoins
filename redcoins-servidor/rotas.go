@@ -23,8 +23,9 @@ func RotaCadastro(w http.ResponseWriter, r *http.Request) {
 
 // RotaCompra realiza a compra de Bitcoins para um usuário a partir de um
 // request HTTPS. O pedido deve ser feito com o método POST e ter os campos
-// "email", "senha" e "qtd" preenchidos, sendo o último a quantidade de Bitcoins
-// a ser comprada, apenas dígitos e com o separado decimal sendo ponto.
+// "email", "senha", "qtd" e "data" preenchidos, sendo "qtd" a quantidade de
+// Bitcoins a ser comprada, apenas dígitos e com o separado decimal sendo ponto
+// e "data" no formato "YYYY-MM-DD".
 func RotaCompra(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
@@ -35,8 +36,9 @@ func RotaCompra(w http.ResponseWriter, r *http.Request) {
 
 // RotaVenda realiza a venda de Bitcoins para um usuário a partir de um request
 // HTTPS. O pedido deve ser feito com o método POST e ter os campos "email",
-// "senha" e "qtd" preenchidos, sendo o último a quantidade de Bitcoins a ser
-// comprada, apenas dígitos e com o separado decimal sendo ponto.
+// "senha", "qtd" e "data" preenchidos, sendo "qtd" a quantidade de Bitcoins a
+// ser vendida, apenas dígitos e com o separado decimal sendo ponto e "data" no
+// formato "YYYY-MM-DD".
 func RotaVenda(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
