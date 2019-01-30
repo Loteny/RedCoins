@@ -12,7 +12,8 @@ func TestCria(t *testing.T) {
 	msg := make([]string, 1)
 	msg[0] = "mensagem de teste de erro"
 	original := Erros{interno: true, statusCode: 200, msg: msg}
-	gerado := Cria(true, 200, msg[0])
+	g := Cria(true, 200, msg[0])
+	gerado := g.(Erros)
 
 	if original.interno != gerado.interno ||
 		original.statusCode != gerado.statusCode ||
@@ -23,17 +24,19 @@ func TestCria(t *testing.T) {
 }
 
 func TestCriaVazio(t *testing.T) {
-	e := CriaVazio(500)
+	err := CriaVazio()
+	e := err.(Erros)
 	if e.interno != false ||
 		len(e.msg) != 0 ||
-		e.statusCode != 500 {
+		e.statusCode != 0 {
 		t.Errorf("Erro vazio criado incorretamente: %v", e)
 	}
 }
 
 func TestCriaInternoPadrao(t *testing.T) {
 	err := errors.New("mensagem de teste de erro")
-	gerado := CriaInternoPadrao(err)
+	g := CriaInternoPadrao(err)
+	gerado := g.(Erros)
 
 	if gerado.Error() != err.Error() {
 		t.Errorf("Mensagens de erros diferentes.\nGerado: %v\nOriginal: %v",
@@ -80,21 +83,40 @@ func TestAbre(t *testing.T) {
 }
 
 func TestAdiciona(t *testing.T) {
-	e := Cria(true, 500, "erro 1")
-	e.Adiciona("erro 2")
+	err := Cria(true, 500, "erro 1")
+	err = Adiciona(err, "erro 2")
+	e := err.(Erros)
 	if e.msg[0] != "erro 1" || e.msg[1] != "erro 2" {
 		t.Errorf("Mensagens de erros inesperadas.\n1: %v\n2: %v", e.msg[0], e.msg[1])
 	}
 }
 
+func TestJuntaErros(t *testing.T) {
+	// Testa união de dois erros não-internos
+	e1 := Cria(false, 500, "e1").(Erros)
+	e2 := Cria(false, 500, "e2").(Erros)
+	eResultado := JuntaErros(e1, e2)
+	if r := eResultado.Error(); r != `["e1","e2"]` {
+		t.Errorf("União de erros teve resultado incorreto: %v", r)
+	}
+	// Se um dos erros for interno, o resultado deve ser ele mesmo
+	e3 := Cria(true, 400, "e3").(Erros)
+	eResultado = JuntaErros(e1, e3)
+	if r := eResultado.Error(); r != `e3` {
+		t.Errorf("União de erros teve resultado incorreto: %v", r)
+	}
+}
+
 func TestTransforma(t *testing.T) {
 	// Erro vazio
-	e := CriaVazio(400)
+	err := CriaVazio()
+	e := err.(Erros)
 	if err := e.Transforma(); err != nil {
 		t.Errorf("Erro inesperado ao transformar erro: %v", err)
 	}
 	// Erro com item
-	e.Adiciona("erro 1")
+	err = Adiciona(e, "erro 1")
+	e = err.(Erros)
 	if err := e.Transforma(); err == nil {
 		t.Errorf("Erro 'nil' quando não deveria ser: %v", e)
 	}
