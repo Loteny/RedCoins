@@ -53,7 +53,7 @@ func validaDadosTransacao(r *http.Request) (string, float64, error) {
 	// será encontrado no banco de dados e nem o servidor nem o banco de dados
 	// passaram a malfuncionar.
 	fQtd, err := strconv.ParseFloat(qtd, 64)
-	if err == strconv.ErrSyntax {
+	if err == strconv.ErrSyntax || fQtd < 0 {
 		return "", 0, ErrQtdInvalida
 	} else if err != nil {
 		return "", 0, err
