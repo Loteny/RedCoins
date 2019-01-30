@@ -13,8 +13,8 @@ import (
 // Responde envia uma resposta HTTP com status code 's' no formato JSON com o
 // conteúdo 'r'
 func Responde(w http.ResponseWriter, s int, r []byte) error {
-	w.WriteHeader(s)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(s)
 	_, err := w.Write(r)
 	if err != nil {
 		log.Printf("comunicacao: Responde: %s", err)
