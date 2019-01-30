@@ -29,6 +29,8 @@ func estabeleceRotas() {
 	http.HandleFunc("/cadastro", RotaCadastro)
 	http.HandleFunc("/compra", RotaCompra)
 	http.HandleFunc("/venda", RotaVenda)
+	http.HandleFunc("/relatorio/data", RotaRelatorioDia)
+	http.HandleFunc("/relatorio/usr", RotaRelatorioUsuario)
 }
 
 func main() {
