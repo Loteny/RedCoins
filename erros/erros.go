@@ -48,6 +48,12 @@ func Cria(interno bool, statusCode int, msg string) Erros {
 	return Erros{interno: interno, statusCode: statusCode, msg: msgs}
 }
 
+// CriaVazio gera uma nova estrutura 'Erros' sem uma mensagens de erros. Útil
+// para preparar para uma possível lista de erros. O erro criado não é interno.
+func CriaVazio(statusCode int) Erros {
+	return Erros{interno: false, statusCode: statusCode, msg: []string{}}
+}
+
 // CriaInternoPadrao cria uma estrutura 'Erros' com interno = true, statusCode =
 // 500 e a mesma mensagem de erro que o erro passado
 func CriaInternoPadrao(err error) Erros {
@@ -90,4 +96,18 @@ func Abre(e error) (bool, int, error) {
 		log.Print(e)
 	}
 	return objErros.interno, objErros.statusCode, errors.New(objErros.Error())
+}
+
+// Adiciona insere um erro na lista de erros da struct
+func (e *Erros) Adiciona(msg string) {
+	e.msg = append(e.msg, msg)
+}
+
+// Transforma retorna o objeto em forma de 'error' caso não esteja vazio (erro
+// não interno e sem mensagens de erros) e 'nil' caso esteja.
+func (e Erros) Transforma() error {
+	if !e.interno && len(e.msg) == 0 {
+		return nil
+	}
+	return e
 }

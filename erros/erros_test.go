@@ -22,6 +22,15 @@ func TestCria(t *testing.T) {
 	}
 }
 
+func TestCriaVazio(t *testing.T) {
+	e := CriaVazio(500)
+	if e.interno != false ||
+		len(e.msg) != 0 ||
+		e.statusCode != 500 {
+		t.Errorf("Erro vazio criado incorretamente: %v", e)
+	}
+}
+
 func TestCriaInternoPadrao(t *testing.T) {
 	err := errors.New("mensagem de teste de erro")
 	gerado := CriaInternoPadrao(err)
@@ -49,17 +58,45 @@ func TestError(t *testing.T) {
 	}
 }
 
-func TestAbreInterno(t *testing.T) {
+func TestAbre(t *testing.T) {
+	// Erro interno (com logging)
 	buf := testAbre(t, true)
 	if buf.String() == "" {
 		t.Errorf("Logging de erro incorreto. Log adquirido: %v", buf.String())
 	}
-}
-
-func TestAbreExterno(t *testing.T) {
-	buf := testAbre(t, false)
+	// Erro externo (sem logging)
+	buf = testAbre(t, false)
 	if buf.String() != "" {
 		t.Errorf("Logging não deveria ocorrer. Log adquirido: %v", buf.String())
+	}
+	// Erro que não é struct 'Erros' (com logging)
+	e := errors.New("erro teste")
+	interno, statusCode, err := Abre(e)
+	if e != err ||
+		interno != true ||
+		statusCode != 500 {
+		t.Errorf("Valores gerados inválidos: %v / %v / %v", interno, statusCode, err)
+	}
+}
+
+func TestAdiciona(t *testing.T) {
+	e := Cria(true, 500, "erro 1")
+	e.Adiciona("erro 2")
+	if e.msg[0] != "erro 1" || e.msg[1] != "erro 2" {
+		t.Errorf("Mensagens de erros inesperadas.\n1: %v\n2: %v", e.msg[0], e.msg[1])
+	}
+}
+
+func TestTransforma(t *testing.T) {
+	// Erro vazio
+	e := CriaVazio(400)
+	if err := e.Transforma(); err != nil {
+		t.Errorf("Erro inesperado ao transformar erro: %v", err)
+	}
+	// Erro com item
+	e.Adiciona("erro 1")
+	if err := e.Transforma(); err == nil {
+		t.Errorf("Erro 'nil' quando não deveria ser: %v", e)
 	}
 }
 
