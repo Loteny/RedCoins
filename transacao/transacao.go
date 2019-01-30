@@ -1,4 +1,5 @@
-// Package transacao abstrai a realização de transações no servidor
+// Package transacao abstrai a realização de transações no servidor.
+// Esse package usa exclusivamente a estrutura de erros 'erros.Erros'.
 package transacao
 
 import (
@@ -18,41 +19,41 @@ var (
 )
 
 // CompraHTTP realiza uma compra de Bitcoins a partir de um request HTTP
-func CompraHTTP(r *http.Request) error {
+func CompraHTTP(r *http.Request) erros.Erros {
 	return transacaoHTTP(r, true)
 }
 
 // VendaHTTP realiza uma venda de Bitcoins a partir de um request HTTP
-func VendaHTTP(r *http.Request) error {
+func VendaHTTP(r *http.Request) erros.Erros {
 	return transacaoHTTP(r, false)
 }
 
-func transacaoHTTP(r *http.Request, compra bool) error {
+func transacaoHTTP(r *http.Request, compra bool) erros.Erros {
 	// Adquire os dados da compra
 	email, qtd, err := validaDadosTransacao(r)
-	if err != nil {
+	if !erros.Vazio(err) {
 		return err
 	}
-	preco, err := precobtc.Preco(qtd)
-	if err != nil {
-		return err
+	preco, err2 := precobtc.Preco(qtd)
+	if err2 != nil {
+		return erros.CriaInternoPadrao(err2)
 	}
 	// Insere no banco de dados
 	if err := database.InsereTransacao(email, compra, qtd, preco); err == database.ErrSaldoInsuficiente {
 		return ErrSaldoInsuficiente
 	} else if err != nil {
-		return err
+		return erros.CriaInternoPadrao(err)
 	}
-	return nil
+	return erros.CriaVazio()
 }
 
 // validaDadosTransacao verifica se a quantidade de Bitcoins a ser comprada ou
 // vendida é válida e retorna o e-mail do usuário e a quantidade de Bitcoins
 // para transação.
-func validaDadosTransacao(r *http.Request) (string, float64, error) {
+func validaDadosTransacao(r *http.Request) (string, float64, erros.Erros) {
 	// Adquire os dados do request
 	if err := comunicacao.RealizaParseForm(r); err != nil {
-		return "", 0, err
+		return "", 0, erros.CriaInternoPadrao(err)
 	}
 	email := r.PostFormValue("email")
 	qtd := r.PostFormValue("qtd")
@@ -64,8 +65,8 @@ func validaDadosTransacao(r *http.Request) (string, float64, error) {
 	if err == strconv.ErrSyntax || fQtd < 0 {
 		return "", 0, ErrQtdInvalida
 	} else if err != nil {
-		return "", 0, err
+		return "", 0, erros.CriaInternoPadrao(err)
 	}
 
-	return email, fQtd, nil
+	return email, fQtd, erros.CriaVazio()
 }

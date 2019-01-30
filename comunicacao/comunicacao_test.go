@@ -2,10 +2,11 @@ package comunicacao
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/loteny/redcoins/erros"
 )
 
 // ConteudoStruct serve como estrutura para ser passada nos testes de
@@ -101,7 +102,7 @@ func TestRespondeErro(t *testing.T) {
 
 	// Upload do servidor de teste
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		RespondeErro(w, http.StatusBadRequest, errors.New("erro teste"))
+		RespondeErro(w, http.StatusBadRequest, erros.Cria(false, 400, "erro teste"))
 	})
 	handler.ServeHTTP(recorder, request)
 
@@ -112,7 +113,7 @@ func TestRespondeErro(t *testing.T) {
 	}
 
 	// Checa o corpo da mensagem
-	esperado := `{"erro":"erro teste"}`
+	esperado := `{"erros":["erro teste"]}`
 	if recorder.Body.String() != esperado {
 		t.Errorf("Corpo da mensagem incorreto.\nAdquirido: %v\nDesejado: %v",
 			recorder.Body.String(), esperado)

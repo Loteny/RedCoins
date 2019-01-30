@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/loteny/redcoins/erros"
 )
 
 // Responde envia uma resposta HTTP com status code 's' no formato JSON com o
@@ -27,10 +29,13 @@ func RespondeSucesso(w http.ResponseWriter, r []byte) error {
 }
 
 // RespondeErro envia a mensagem de erro passada para função em JSON
-func RespondeErro(w http.ResponseWriter, statusCode int, e error) error {
-	m := make(map[string]string)
-	m["erro"] = e.Error()
-	msg, _ := json.Marshal(m)
+func RespondeErro(w http.ResponseWriter, statusCode int, e erros.Erros) error {
+	m := make(map[string][]string)
+	m["erros"] = erros.Lista(e)
+	msg, err := json.Marshal(m)
+	if err != nil {
+		log.Printf("comunicacao: RespondeErro: %s", err)
+	}
 	return Responde(w, statusCode, msg)
 }
 
