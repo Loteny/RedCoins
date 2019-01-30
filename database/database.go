@@ -3,9 +3,12 @@ package database
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
+	"log"
+	"os"
 	"strconv"
 
 	// Driver MySQL
@@ -15,18 +18,18 @@ import (
 // Configurações para o banco de dados
 var (
 	// Nome de usuário
-	usuarioDb = "root"
+	usuarioDb string
 	// Senha do usuário
 	//senha = "tvM@v:2gj@A')cH5"
-	senhaDb = ""
+	senhaDb string
 	// Nome do banco de dados
-	dbNome = "redcoins"
+	dbNome string
 	// Nome do banco de dados de testes
-	testDbNome = "redcoins_teste"
+	testDbNome string
 	// Endereço do bando de dados com port
-	enderecoDb = "localhost:55555"
+	enderecoDb string
 	// Data Source Name: string completa para conexão com o banco de dados
-	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + dbNome
+	dsn string
 )
 
 // Erros possíveis do módulo
@@ -52,6 +55,41 @@ type Transacao struct {
 	Creditos float64 `json:"creditos"`
 	Bitcoins float64 `json:"bitcoins"`
 	Dia      string  `json:"dia"`
+}
+
+// config é a estrutura com as configurações do servidor
+type config struct {
+	Database struct {
+		UsuarioDb  string `json:"usuarioDb"`
+		SenhaDb    string `json:"senhaDb"`
+		DbNome     string `json:"dbNome"`
+		TestDbNome string `json:"testDbNome"`
+		EnderecoDb string `json:"enderecoDb"`
+	} `json:"database"`
+}
+
+// init lê o arquivo de configurações e configura o package corretamente
+func init() {
+	// Inicializa as configurações do módulo com o arquivo config.json
+	arquivoConfig, err := os.Open("config.json")
+	if err != nil {
+		log.Fatalf("Erro ao abrir arquivo de configurações da database: %s", err)
+	}
+	var c config
+	if err := json.NewDecoder(arquivoConfig).Decode(&c); err != nil {
+		log.Fatalf("Erro ao ler configurações da database: %s", err)
+	}
+	usuarioDb = c.Database.UsuarioDb
+	senhaDb = c.Database.SenhaDb
+	dbNome = c.Database.DbNome
+	testDbNome = c.Database.TestDbNome
+	enderecoDb = c.Database.EnderecoDb
+	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + dbNome
+	// Se o package estiver em modo de teste, altera o DSN
+	if flag.Lookup("test.v") != nil {
+		dbNome = testDbNome
+		dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
+	}
 }
 
 // CriaDatabase verifica se o banco de dados do servidor está criado. Se não
@@ -435,13 +473,4 @@ func insereLinhaTransacao(tx *sql.Tx, usuario uint, compra bool, preco float64, 
 		return err
 	}
 	return nil
-}
-
-// init altera o DSN para usar o banco de dados de teste se a execução estiver
-// em modo de teste
-func init() {
-	if flag.Lookup("test.v") != nil {
-		dbNome = testDbNome
-		dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
-	}
 }
