@@ -3,6 +3,7 @@
 package transacao
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
@@ -28,6 +29,28 @@ func CompraHTTP(r *http.Request) erros.Erros {
 // VendaHTTP realiza uma venda de Bitcoins a partir de um request HTTP
 func VendaHTTP(r *http.Request) erros.Erros {
 	return transacaoHTTP(r, false)
+}
+
+// TransacoesDiaHTTP adquire todas as transações em um dia "YYYY-MM-DD" no campo
+// POST "data", retornando os bytes da string JSON com as transações para o
+// cliente
+func TransacoesDiaHTTP(r *http.Request) ([]byte, erros.Erros) {
+	// Adquire o e-mail do request
+	if err := comunicacao.RealizaParseForm(r); err != nil {
+		return nil, erros.CriaInternoPadrao(err)
+	}
+	data := r.PostFormValue("data")
+
+	// Adquire as transações
+	transacoes, err := database.AdquireTransacoesEmDia(data)
+	if err != nil {
+		return nil, erros.CriaInternoPadrao(err)
+	}
+	trBytes, err := json.Marshal(map[string][]database.Transacao{"transacoes": transacoes})
+	if err != nil {
+		return nil, erros.CriaInternoPadrao(err)
+	}
+	return trBytes, erros.CriaVazio()
 }
 
 func transacaoHTTP(r *http.Request, compra bool) erros.Erros {

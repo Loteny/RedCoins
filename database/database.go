@@ -47,11 +47,11 @@ type Usuario struct {
 
 // Transacao é a estrutura com dados de uma transação
 type Transacao struct {
-	usuario  string
-	compra   bool
-	creditos float64
-	bitcoins float64
-	dia      string
+	Usuario  string  `json:"usuario"`
+	Compra   bool    `json:"compra"`
+	Creditos float64 `json:"creditos"`
+	Bitcoins float64 `json:"bitcoins"`
+	Dia      string  `json:"dia"`
 }
 
 // CriaTabelas cria as tabelas do banco de dados do servidor
@@ -192,12 +192,12 @@ func AdquireTransacoesDeUsuario(email string) ([]Transacao, error) {
 	defer rows.Close()
 	transacoes := make([]Transacao, 0)
 	for rows.Next() {
-		tr := Transacao{usuario: email}
+		tr := Transacao{Usuario: email}
 		compra := make([]uint8, 1)
-		if err := rows.Scan(&compra, &tr.creditos, &tr.bitcoins, &tr.dia); err != nil {
+		if err := rows.Scan(&compra, &tr.Creditos, &tr.Bitcoins, &tr.Dia); err != nil {
 			return nil, err
 		}
-		tr.compra = compra[0] == 1
+		tr.Compra = compra[0] == 1
 		transacoes = append(transacoes, tr)
 	}
 	if err := rows.Err(); err != nil {
@@ -231,10 +231,10 @@ func AdquireTransacoesEmDia(dia string) ([]Transacao, error) {
 	for rows.Next() {
 		tr := Transacao{}
 		compra := make([]uint8, 1)
-		if err := rows.Scan(&tr.usuario, &compra, &tr.creditos, &tr.bitcoins, &tr.dia); err != nil {
+		if err := rows.Scan(&tr.Usuario, &compra, &tr.Creditos, &tr.Bitcoins, &tr.Dia); err != nil {
 			return nil, err
 		}
-		tr.compra = compra[0] == 1
+		tr.Compra = compra[0] == 1
 		transacoes = append(transacoes, tr)
 	}
 	if err := rows.Err(); err != nil {
