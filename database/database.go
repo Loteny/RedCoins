@@ -31,9 +31,9 @@ var (
 
 // Erros possíveis do módulo
 var (
-	ErrUsuarioDuplicado  = errors.New("E-mail já cadastrado")
-	ErrUsuarioNaoExiste  = errors.New("Usuário não existente")
-	ErrSaldoInsuficiente = errors.New("Saldo insuficiente")
+	ErrUsuarioDuplicado  = errors.New("email_ja_cadastrado")
+	ErrUsuarioNaoExiste  = errors.New("usuario_nao_existente")
+	ErrSaldoInsuficiente = errors.New("saldo_insuficiente")
 )
 
 // Usuario é a estrutura para a tabela 'usuario'.

@@ -15,11 +15,12 @@ import (
 
 // Lista de possíveis erros do módulo
 var (
-	ErrEmailInvalido      = erros.Cria(false, 400, "email invalido")
-	ErrSenhaInvalida      = erros.Cria(false, 400, "senha invalida")
-	ErrSenhaMuitoLonga    = erros.Cria(false, 400, "senha muito longa")
-	ErrNomeInvalido       = erros.Cria(false, 400, "nome invalido")
-	ErrNascimentoInvalido = erros.Cria(false, 400, "nascimento invalido")
+	ErrUsuarioDuplicado   = erros.Cria(false, 400, "email_ja_cadastrado")
+	ErrEmailInvalido      = erros.Cria(false, 400, "email_invalido")
+	ErrSenhaInvalida      = erros.Cria(false, 400, "senha_invalida")
+	ErrSenhaMuitoLonga    = erros.Cria(false, 400, "senha_longa")
+	ErrNomeInvalido       = erros.Cria(false, 400, "nome_invalido")
+	ErrNascimentoInvalido = erros.Cria(false, 400, "nascimento_invalido")
 )
 
 // Estrutura que contém todos os dados cadastrais de um usuário
@@ -51,7 +52,9 @@ func RealizaCadastroRequestHTTP(r *http.Request) erros.Erros {
 		Nome:       dados.nome,
 		Nascimento: dados.nascimento,
 	}
-	if err := database.InsereUsuario(&usr); err != nil {
+	if err := database.InsereUsuario(&usr); err == database.ErrUsuarioDuplicado {
+		return ErrUsuarioDuplicado
+	} else if err != nil {
 		return erros.CriaInternoPadrao(err)
 	}
 	return erros.CriaVazio()

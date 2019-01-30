@@ -14,8 +14,8 @@ import (
 
 // Lista de possíveis erros do módulo
 var (
-	ErrQtdInvalida       = erros.Cria(false, 400, "qtd de bitcoins inválida")
-	ErrSaldoInsuficiente = erros.Cria(false, 400, database.ErrSaldoInsuficiente.Error())
+	ErrQtdInvalida       = erros.Cria(false, 400, "qtd_invalida")
+	ErrSaldoInsuficiente = erros.Cria(false, 400, "saldo_insuficiente")
 )
 
 // CompraHTTP realiza uma compra de Bitcoins a partir de um request HTTP
