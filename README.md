@@ -67,11 +67,23 @@ Aqui estão listados alguns comandos de cURL para testes. Parâmetros em {chaves
 curl -X POST "https://{link do servidor}/cadastro" -H "accept: application/json" -H "Content-Type: application/x-www-form-urlencoded" -d "email={e-mail do usuário}&senha={senha do usuário}&nome={nome do usuário}&nascimento={data de nascimento do usuário}" -k -v
 ```
 
+Exemplo:
+
+```bash
+curl -X POST "https://127.0.0.1/cadastro" -H "accept: application/json" -H "Content-Type: application/x-www-form-urlencoded" -d "email=teste%40gmail%2Ecom&senha=password123&nome=Usu%C3%A1rio%20Teste&nascimento=1990%2D03%2D08" -k -v
+```
+
 ### Compra de bitcoins
 
 ```bash
 curl -X POST "https://{e-mail}:{senha}@{link do servidor}/transacoes/compra" -H "accept: application/json" -H "Content-Type: application/x-www-form-urlencoded" -d "qtd={quantidade a ser comprada}&data={data da transação}" -k -v
 curl -X POST "https://{link do servidor}/transacoes/compra" -H "accept: application/json" -H "authorization: Basic {autenticação do usuário}" -H "Content-Type: application/x-www-form-urlencoded" -d "qtd={quantidade a ser comprada}&data={data da transação}" -k -v
+```
+
+Exemplo:
+
+```bash
+curl -X POST "https://teste%40gmail%2Ecom:password123@127.0.0.1/transacoes/compra" -H "accept: application/json" -H "Content-Type: application/x-www-form-urlencoded" -d "qtd=0%2E002&data=2019%2D01%2D22" -k -v
 ```
 
 ### Venda de bitcoins
@@ -81,6 +93,12 @@ curl -X POST "https://{e-mail}:{senha}@{link do servidor}/transacoes/venda" -H "
 curl -X POST "https://{link do servidor}/transacoes/venda" -H "accept: application/json" -H "authorization: Basic {autenticação do usuário}" -H "Content-Type: application/x-www-form-urlencoded" -d "qtd={quantidade a ser vendida}&data={data da transação}" -k -v
 ```
 
+Exemplo:
+
+```bash
+curl -X POST "https://teste%40gmail%2Ecom:password123@127.0.0.1/transacoes/venda" -H "accept: application/json" -H "Content-Type: application/x-www-form-urlencoded" -d "qtd=0%2E002&data=2019%2D01%2D22" -k -v
+```
+
 ### Relatório de transações por usuário
 
 ```bash
@@ -88,11 +106,23 @@ curl -X GET "https://{e-mail}:{senha}@{link do servidor}/relatorios/usuario?emai
 curl -X GET "https://{link do servidor}/relatorios/usuario?email={e-mail do usuário}" -H "accept: application/json" -H "authorization: Basic {autenticação do usuário}" -k -v
 ```
 
+Exemplo:
+
+```bash
+curl -X GET "https://teste%40gmail%2Ecom:password123@127.0.0.1/relatorios/usuario?email=teste%40gmail%2Ecom" -H "accept: application/json" -k -v
+```
+
 ### Relatório de transações por data
 
 ```bash
 curl -X GET "https://{e-mail}:{senha}@{link do servidor}/relatorios/data?data={data das transações}" -H "accept: application/json" -k -v
 curl -X GET "https://{link do servidor}/relatorios/data?data={data das transações}" -H "accept: application/json" -H "authorization: Basic {autenticação do usuário}" -k -v
+```
+
+Exemplo:
+
+```bash
+curl -X GET "https://teste%40gmail%2Ecom:password123@127.0.0.1/relatorios/data?data=2019%2D01%2D22" -H "accept: application/json" -k -v
 ```
 
 ## Certificados TLS

@@ -225,7 +225,7 @@ definitions:
           - senha_longa
           - nome_invalido
           - nascimento_invalido
-host: virtserver.swaggerhub.com
-basePath: /Loteny7/RedCoins/1.0.0
+host: localhost
+basePath: /
 schemes:
  - https
