@@ -47,34 +47,38 @@ A API está documentada no arquivo docs/documentacao_api.yaml. Um diagrama do ba
 
 ## Comandos cURL
 
-Aqui estão listados alguns comandos de cURL para testes. Parâmetros em {chaves} devem ser substituídos pelos valores reais.
+Aqui estão listados alguns comandos de cURL para testes. Parâmetros em {chaves} devem ser substituídos pelos valores reais. Cada comando possui dois exemplos: por link, onde os dados da Basic Auth vão no path do pedido onde caracteres especiais devem estar encodados com percent encode (por exemplo, @ se torna %40), e por parâmetro, onde os credenciais devem estar em base64 (exceto o cadastro de usuário, que não requer autenticação).
 
 ### Cadastro de usuário
 
 ```bash
-curl -X POST "https://{link do servidor}/cadastro" -H "accept: application/json" -H "Content-Type: application/x-www-form-urlencoded" -d "email={e-mail do usuário}&senha={senha do usuário}&nome={nome do usuário}&nascimento={data de nascimento do usuário} -k"
+curl -X POST "https://{link do servidor}/cadastro" -H "accept: application/json" -H "Content-Type: application/x-www-form-urlencoded" -d "email={e-mail do usuário}&senha={senha do usuário}&nome={nome do usuário}&nascimento={data de nascimento do usuário}" -k -v
 ```
 
 ### Compra de bitcoins
 
 ```bash
-curl -X POST "https://{link do servidor}/transacoes/compra" -H "accept: application/json" -H "authorization: Basic {autenticação do usuário}" -H "Content-Type: application/x-www-form-urlencoded" -d "qtd={quantidade a ser comprada}&data={data da transação} -k"
+curl -X POST "https://{e-mail}:{senha}@{link do servidor}/transacoes/compra" -H "accept: application/json" -H "Content-Type: application/x-www-form-urlencoded" -d "qtd={quantidade a ser comprada}&data={data da transação}" -k -v
+curl -X POST "https://{link do servidor}/transacoes/compra" -H "accept: application/json" -H "authorization: Basic {autenticação do usuário}" -H "Content-Type: application/x-www-form-urlencoded" -d "qtd={quantidade a ser comprada}&data={data da transação}" -k -v
 ```
 
 ### Venda de bitcoins
 
 ```bash
-curl -X POST "https://{link do servidor}/transacoes/venda" -H "accept: application/json" -H "authorization: Basic {autenticação do usuário}" -H "Content-Type: application/x-www-form-urlencoded" -d "qtd={quantidade a ser vendida}&data={data da transação} -k"
+curl -X POST "https://{e-mail}:{senha}@{link do servidor}/transacoes/venda" -H "accept: application/json" -H "Content-Type: application/x-www-form-urlencoded" -d "qtd={quantidade a ser vendida}&data={data da transação}" -k -v
+curl -X POST "https://{link do servidor}/transacoes/venda" -H "accept: application/json" -H "authorization: Basic {autenticação do usuário}" -H "Content-Type: application/x-www-form-urlencoded" -d "qtd={quantidade a ser vendida}&data={data da transação}" -k -v
 ```
 
 ### Relatório de transações por usuário
 
 ```bash
-curl -X GET "https://{link do servidor}/relatorios/usuario?email={e-mail do usuário}" -H "accept: application/json" -H "authorization: Basic {autenticação do usuário} -k"
+curl -X GET "https://{e-mail}:{senha}@{link do servidor}/relatorios/usuario?email={e-mail do usuário}" -H "accept: application/json" -k -v
+curl -X GET "https://{link do servidor}/relatorios/usuario?email={e-mail do usuário}" -H "accept: application/json" -H "authorization: Basic {autenticação do usuário}" -k -v
 ```
 
 ### Relatório de transações por data
 
 ```bash
-curl -X GET "https://{link do servidor}/relatorios/data?data={data das transações}" -H "accept: application/json" -H "authorization: Basic {autenticação do usuário} -k"
+curl -X GET "https://{e-mail}:{senha}@{link do servidor}/relatorios/data?data={data das transações}" -H "accept: application/json" -k -v
+curl -X GET "https://{link do servidor}/relatorios/data?data={data das transações}" -H "accept: application/json" -H "authorization: Basic {autenticação do usuário}" -k -v
 ```

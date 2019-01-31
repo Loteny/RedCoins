@@ -61,16 +61,17 @@ func RealizaCadastroRequestHTTP(r *http.Request) erros.Erros {
 }
 
 // VerificaLoginRequestHTTP verifica se o usuário existe e a senha está correta
-// a partir de um request HTTP. O request deve ser do tipo POST.
-func VerificaLoginRequestHTTP(r *http.Request) (bool, erros.Erros) {
+// a partir de um request HTTP por Basic Authentication. Retorna se o usuário
+// foi corretamente autenticado, o seu e-mail e erros.
+func VerificaLoginRequestHTTP(r *http.Request) (bool, string, erros.Erros) {
 	// Adquire os dados do request
-	if err := comunicacao.RealizaParseForm(r); err != nil {
-		return false, erros.CriaInternoPadrao(err)
+	email, senha, ok := r.BasicAuth()
+	if !ok {
+		return false, "", erros.CriaVazio()
 	}
-	email := r.PostFormValue("email")
-	senha := r.PostFormValue("senha")
 
-	return verificaLogin(email, senha)
+	logado, err := verificaLogin(email, senha)
+	return logado, email, err
 }
 
 // ValidaDadosCadastroRequestHTTP valida os dados cadastrais apropriados

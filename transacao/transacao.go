@@ -22,13 +22,13 @@ var (
 )
 
 // CompraHTTP realiza uma compra de Bitcoins a partir de um request HTTP
-func CompraHTTP(r *http.Request) erros.Erros {
-	return transacaoHTTP(r, true)
+func CompraHTTP(r *http.Request, email string) erros.Erros {
+	return transacaoHTTP(r, email, true)
 }
 
 // VendaHTTP realiza uma venda de Bitcoins a partir de um request HTTP
-func VendaHTTP(r *http.Request) erros.Erros {
-	return transacaoHTTP(r, false)
+func VendaHTTP(r *http.Request, email string) erros.Erros {
+	return transacaoHTTP(r, email, false)
 }
 
 // TransacoesDiaHTTP adquire todas as transações em um dia "YYYY-MM-DD" no campo
@@ -75,9 +75,9 @@ func TransacoesUsuarioHTTP(r *http.Request) ([]byte, erros.Erros) {
 	return trBytes, erros.CriaVazio()
 }
 
-func transacaoHTTP(r *http.Request, compra bool) erros.Erros {
+func transacaoHTTP(r *http.Request, email string, compra bool) erros.Erros {
 	// Adquire os dados da compra
-	email, qtd, data, err := validaDadosTransacao(r)
+	qtd, data, err := validaDadosTransacao(r)
 	if !erros.Vazio(err) {
 		return err
 	}
@@ -95,14 +95,13 @@ func transacaoHTTP(r *http.Request, compra bool) erros.Erros {
 }
 
 // validaDadosTransacao verifica se a quantidade de Bitcoins a ser comprada ou
-// vendida é válida e retorna o e-mail do usuário, a quantidade de Bitcoins
-// para transação e a data da transação.
-func validaDadosTransacao(r *http.Request) (string, float64, string, erros.Erros) {
+// vendida é válida e retorna a quantidade de Bitcoins para transação e a data
+// da transação.
+func validaDadosTransacao(r *http.Request) (float64, string, erros.Erros) {
 	// Adquire os dados do request
 	if err := comunicacao.RealizaParseForm(r); err != nil {
-		return "", 0, "", erros.CriaInternoPadrao(err)
+		return 0, "", erros.CriaInternoPadrao(err)
 	}
-	email := r.PostFormValue("email")
 	qtd := r.PostFormValue("qtd")
 	data := r.PostFormValue("data")
 	// O e-mail já deve estar validado graças à autenticação. Mesmo que não
@@ -111,12 +110,12 @@ func validaDadosTransacao(r *http.Request) (string, float64, string, erros.Erros
 	// passaram a malfuncionar.
 	fQtd, err := strconv.ParseFloat(qtd, 64)
 	if err != nil || fQtd < 0 {
-		return "", 0, "", ErrQtdInvalida
+		return 0, "", ErrQtdInvalida
 	}
 	// Data da transação
 	if _, err := time.Parse("2006-01-02", data); err != nil {
-		return "", 0, "", ErrDataInvalida
+		return 0, "", ErrDataInvalida
 	}
 
-	return email, fQtd, data, erros.CriaVazio()
+	return fQtd, data, erros.CriaVazio()
 }

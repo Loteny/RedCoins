@@ -63,7 +63,7 @@ func TestVerificaLoginRequestHTTP(t *testing.T) {
 	form.Set("senha", "123456")
 	// Função que vai chamar a função a ser testada e tratar seu retorno
 	rotaHTTP := func(w http.ResponseWriter, r *http.Request) {
-		logado, err := VerificaLoginRequestHTTP(r)
+		logado, _, err := VerificaLoginRequestHTTP(r)
 		if !erros.Vazio(err) {
 			t.Errorf("Erro inesperado no login: %v", err)
 		} else if !logado {
@@ -77,7 +77,7 @@ func TestVerificaLoginRequestHTTP(t *testing.T) {
 	form.Set("senha", "123455")
 	// Função que vai chamar a função a ser testada e tratar seu retorno
 	rotaHTTP = func(w http.ResponseWriter, r *http.Request) {
-		logado, err := VerificaLoginRequestHTTP(r)
+		logado, _, err := VerificaLoginRequestHTTP(r)
 		if !erros.Vazio(err) {
 			t.Errorf("Erro inesperado no login: %v", err)
 		} else if logado {
@@ -91,7 +91,7 @@ func TestVerificaLoginRequestHTTP(t *testing.T) {
 	form.Set("senha", "123456")
 	// Função que vai chamar a função a ser testada e tratar seu retorno
 	rotaHTTP = func(w http.ResponseWriter, r *http.Request) {
-		logado, err := VerificaLoginRequestHTTP(r)
+		logado, _, err := VerificaLoginRequestHTTP(r)
 		if !erros.Vazio(err) {
 			t.Errorf("Erro inesperado no login: %v", err)
 		} else if logado {
