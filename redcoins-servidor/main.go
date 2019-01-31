@@ -28,7 +28,7 @@ type config struct {
 
 func init() {
 	// Inicializa as configurações do módulo com o arquivo config.json
-	arquivoConfig, err := os.Open("config.json")
+	arquivoConfig, err := os.Open("./config.json")
 	if err != nil {
 		log.Fatalf("Erro ao abrir arquivo de configurações do servidor: %s", err)
 	}

@@ -20,7 +20,6 @@ var (
 	// Nome de usuário
 	usuarioDb string
 	// Senha do usuário
-	//senha = "tvM@v:2gj@A')cH5"
 	senhaDb string
 	// Nome do banco de dados
 	dbNome string
@@ -71,7 +70,7 @@ type config struct {
 // init lê o arquivo de configurações e configura o package corretamente
 func init() {
 	// Inicializa as configurações do módulo com o arquivo config.json
-	arquivoConfig, err := os.Open("config.json")
+	arquivoConfig, err := os.Open("./config.json")
 	if err != nil {
 		log.Fatalf("Erro ao abrir arquivo de configurações da database: %s", err)
 	}
