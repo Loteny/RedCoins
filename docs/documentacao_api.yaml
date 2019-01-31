@@ -94,9 +94,20 @@ paths:
         type: string
       - name: senha
         in: formData
-        description: Data da transação
+        description: Senha do usuário (deve conter pelo menos 6 caracteres)
         required: true
         type: string
+      - name: nome
+        in: formData
+        description: Nome do usuário
+        required: true
+        type: string
+      - name: nascimento
+        in: formData
+        description: Data de nascimento do usuário
+        required: true
+        type: string
+        format: YYYY-MM-DD
       responses:
         200:
           description: Cadastro realizado com sucesso
@@ -114,7 +125,7 @@ paths:
       - application/json
       parameters:
       - name: email
-        in: path
+        in: query
         description: E-mail do usuário
         required: true
         type: string
@@ -135,7 +146,7 @@ paths:
       - application/json
       parameters:
       - name: data
-        in: path
+        in: query
         description: Dia para visualizar as transações
         required: true
         type: string
