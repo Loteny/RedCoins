@@ -99,7 +99,7 @@ func RotaVenda(w http.ResponseWriter, r *http.Request) {
 // RotaRelatorioDia retorna todas as transações feitas em um determinado dia
 // no campo "data" (YYYY-MM-DD)
 func RotaRelatorioDia(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
+	if r.Method != "GET" {
 		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
 		return
 	}
@@ -122,13 +122,13 @@ func RotaRelatorioDia(w http.ResponseWriter, r *http.Request) {
 		comunicacao.Responde(w, status, []byte{})
 		return
 	}
-	comunicacao.Responde(w, http.StatusCreated, resposta)
+	comunicacao.Responde(w, http.StatusOK, resposta)
 }
 
 // RotaRelatorioUsuario retorna todas as transações feitas em um determinado
-// usuário a partir de seu e-mail no campo "email_transacoes"
+// usuário a partir de seu e-mail no campo "email"
 func RotaRelatorioUsuario(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
+	if r.Method != "GET" {
 		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
 		return
 	}
@@ -151,7 +151,7 @@ func RotaRelatorioUsuario(w http.ResponseWriter, r *http.Request) {
 		comunicacao.Responde(w, status, []byte{})
 		return
 	}
-	comunicacao.Responde(w, http.StatusCreated, resposta)
+	comunicacao.Responde(w, http.StatusOK, resposta)
 }
 
 // autenticaUsuario verifica se o usuário é cadastrado e se a senha está

@@ -32,14 +32,13 @@ func VendaHTTP(r *http.Request, email string) erros.Erros {
 }
 
 // TransacoesDiaHTTP adquire todas as transações em um dia "YYYY-MM-DD" no campo
-// POST "data", retornando os bytes da string JSON com as transações para o
-// cliente
+// "data", retornando os bytes da string JSON com as transações para o cliente
 func TransacoesDiaHTTP(r *http.Request) ([]byte, erros.Erros) {
 	// Adquire o e-mail do request
 	if err := comunicacao.RealizaParseForm(r); err != nil {
 		return nil, erros.CriaInternoPadrao(err)
 	}
-	data := r.PostFormValue("data")
+	data := r.FormValue("data")
 
 	// Adquire as transações
 	transacoes, err := database.AdquireTransacoesEmDia(data)
@@ -54,14 +53,14 @@ func TransacoesDiaHTTP(r *http.Request) ([]byte, erros.Erros) {
 }
 
 // TransacoesUsuarioHTTP adquire todas as transações de um usuário a partir de
-// seu e-mail no campo POST "email_transacoes", retornando os bytes da string
-// JSON com as transações para o cliente
+// seu e-mail no campo "email", retornando os bytes da string JSON com as
+// transações para o cliente
 func TransacoesUsuarioHTTP(r *http.Request) ([]byte, erros.Erros) {
 	// Adquire o e-mail do request
 	if err := comunicacao.RealizaParseForm(r); err != nil {
 		return nil, erros.CriaInternoPadrao(err)
 	}
-	email := r.PostFormValue("email_transacoes")
+	email := r.FormValue("email")
 
 	// Adquire as transações
 	transacoes, err := database.AdquireTransacoesDeUsuario(email)
