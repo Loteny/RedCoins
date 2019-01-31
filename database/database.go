@@ -121,6 +121,22 @@ func CriaDatabase() error {
 	return criaTabelas()
 }
 
+// DeletaDatabaseTeste deleta totalmente o banco de dados de teste do servidor.
+// Essa função só existe especificamente para o banco de dados de teste para
+// diminuir as chances de ocorrer um erro e o banco de dados oficial ser
+// deletado.
+func DeletaDatabaseTeste() error {
+	tempDSN := usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/"
+	db, err := sql.Open("mysql", tempDSN)
+	defer db.Close()
+	if err != nil {
+		return err
+	}
+	sqlCode := `DROP DATABASE IF EXISTS ` + testDbNome + `;`
+	_, err = db.Exec(sqlCode)
+	return err
+}
+
 // InsereUsuario cria uma nova linha na tabela 'usuario'. Retorna
 // ErrUsuarioDuplicado se o usuário é repetido (mesmo e-mail)
 func InsereUsuario(usr *Usuario) error {
