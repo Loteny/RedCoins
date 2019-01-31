@@ -15,13 +15,12 @@ import (
 func TestCompraHTTP(t *testing.T) {
 	// Formulário válido
 	form := url.Values{}
-	form.Set("email", "teste@gmail.com")
 	form.Set("senha", "123456")
 	form.Set("qtd", "0.03")
 	form.Set("data", "2018-01-01")
 	// Função que vai chamar a função a ser testada e tratar seu retorno
 	rotaHTTP := func(w http.ResponseWriter, r *http.Request) {
-		err := CompraHTTP(r)
+		err := CompraHTTP(r, "teste@gmail.com")
 		if !erros.Vazio(err) {
 			t.Errorf("Erro inesperado na transação: %v", err)
 		}
@@ -32,7 +31,7 @@ func TestCompraHTTP(t *testing.T) {
 	form.Set("qtd", "-2")
 	// Função que vai chamar a função a ser testada e tratar seu retorno
 	rotaHTTP = func(w http.ResponseWriter, r *http.Request) {
-		err := CompraHTTP(r)
+		err := CompraHTTP(r, "teste@gmail.com")
 		if err.Error() != ErrQtdInvalida.Error() {
 			t.Errorf("Erro inesperado na transação: %v", err)
 		}
@@ -51,7 +50,7 @@ func TestVendaHTTP(t *testing.T) {
 	form.Set("data", "2018-01-01")
 	// Função que vai chamar a função a ser testada e tratar seu retorno
 	rotaHTTP := func(w http.ResponseWriter, r *http.Request) {
-		err := VendaHTTP(r)
+		err := VendaHTTP(r, "teste@gmail.com")
 		if !erros.Vazio(err) {
 			t.Errorf("Erro inesperado na transação: %v", err)
 		}
@@ -62,7 +61,7 @@ func TestVendaHTTP(t *testing.T) {
 	form.Set("qtd", "-2")
 	// Função que vai chamar a função a ser testada e tratar seu retorno
 	rotaHTTP = func(w http.ResponseWriter, r *http.Request) {
-		err := VendaHTTP(r)
+		err := VendaHTTP(r, "teste@gmail.com")
 		if err.Error() != ErrQtdInvalida.Error() {
 			t.Errorf("Erro inesperado na transação: %v", err)
 		}
@@ -73,7 +72,7 @@ func TestVendaHTTP(t *testing.T) {
 	form.Set("qtd", "100")
 	// Função que vai chamar a função a ser testada e tratar seu retorno
 	rotaHTTP = func(w http.ResponseWriter, r *http.Request) {
-		err := VendaHTTP(r)
+		err := VendaHTTP(r, "teste@gmail.com")
 		if err.Error() != ErrSaldoInsuficiente.Error() {
 			t.Errorf("Erro inesperado na transação: %v", err)
 		}

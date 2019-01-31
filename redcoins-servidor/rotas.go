@@ -18,7 +18,20 @@ func RotaCadastro(w http.ResponseWriter, r *http.Request) {
 		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
 		return
 	}
-	respostaPadrao(w, r, http.StatusCreated, cadastro.RealizaCadastroRequestHTTP)
+
+	// Se o erro gerado for externo, envia os erros para o usuário. Se não,
+	// envia apenas um status code indicando erro interno. Se não houve erro
+	// gerado, envia status code de sucesso.
+	if err := cadastro.RealizaCadastroRequestHTTP(r); !erros.Vazio(err) {
+		interno, status, _ := erros.Abre(err)
+		if !interno {
+			comunicacao.RespondeErro(w, status, err)
+			return
+		}
+		comunicacao.Responde(w, status, []byte{})
+		return
+	}
+	comunicacao.Responde(w, http.StatusCreated, []byte{})
 }
 
 // RotaCompra realiza a compra de Bitcoins para um usuário a partir de um
@@ -31,7 +44,25 @@ func RotaCompra(w http.ResponseWriter, r *http.Request) {
 		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
 		return
 	}
-	respostaPadraoAutenticada(w, r, http.StatusCreated, transacao.CompraHTTP)
+
+	autenticado, email := autenticaUsuario(w, r)
+	if !autenticado {
+		return
+	}
+
+	// Se o erro gerado for externo, envia os erros para o usuário. Se não,
+	// envia apenas um status code indicando erro interno. Se não houve erro
+	// gerado, envia status code de sucesso.
+	if err := transacao.CompraHTTP(r, email); !erros.Vazio(err) {
+		interno, status, _ := erros.Abre(err)
+		if !interno {
+			comunicacao.RespondeErro(w, status, err)
+			return
+		}
+		comunicacao.Responde(w, status, []byte{})
+		return
+	}
+	comunicacao.Responde(w, http.StatusCreated, []byte{})
 }
 
 // RotaVenda realiza a venda de Bitcoins para um usuário a partir de um request
@@ -44,38 +75,16 @@ func RotaVenda(w http.ResponseWriter, r *http.Request) {
 		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
 		return
 	}
-	respostaPadraoAutenticada(w, r, http.StatusCreated, transacao.VendaHTTP)
-}
 
-// RotaRelatorioDia retorna todas as transações feitas em um determinado dia
-// no campo "data" (YYYY-MM-DD)
-func RotaRelatorioDia(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
+	autenticado, email := autenticaUsuario(w, r)
+	if !autenticado {
 		return
 	}
-	respostaPadraoAuthComRetorno(w, r, http.StatusCreated, transacao.TransacoesDiaHTTP)
-}
 
-// RotaRelatorioUsuario retorna todas as transações feitas em um determinado
-// usuário a partir de seu e-mail no campo "email_transacoes"
-func RotaRelatorioUsuario(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
-		return
-	}
-	respostaPadraoAuthComRetorno(w, r, http.StatusCreated, transacao.TransacoesUsuarioHTTP)
-}
-
-// respostaPadrao chamada a função 'f' e envia a resposta HTTP adequada
-// dependendo do resultado da função, considerando que a função retorna um
-// erros.Erros.
-// Se o erro for interno, apenas o statusCode deve ser enviado para o cliente,
-// indicando um erro no servidor sem dar detalhes de seu funcionamento. Se não
-// for, os erros devem ser enviados para cliente.
-// statusSucesso indica o status code HTTP para caso de sucesso.
-func respostaPadrao(w http.ResponseWriter, r *http.Request, statusSucesso int, f func(*http.Request) erros.Erros) {
-	if err := f(r); !erros.Vazio(err) {
+	// Se o erro gerado for externo, envia os erros para o usuário. Se não,
+	// envia apenas um status code indicando erro interno. Se não houve erro
+	// gerado, envia status code de sucesso.
+	if err := transacao.VendaHTTP(r, email); !erros.Vazio(err) {
 		interno, status, _ := erros.Abre(err)
 		if !interno {
 			comunicacao.RespondeErro(w, status, err)
@@ -87,11 +96,23 @@ func respostaPadrao(w http.ResponseWriter, r *http.Request, statusSucesso int, f
 	comunicacao.Responde(w, http.StatusCreated, []byte{})
 }
 
-// respostaPadraoComRetorno funciona da mesma maneira que respostaPadrao, mas a
-// função 'f' retorna uma array de bytes a ser enviada para o cliente em caso de
-// sucesso da operação
-func respostaPadraoComRetorno(w http.ResponseWriter, r *http.Request, statusSucesso int, f func(*http.Request) ([]byte, erros.Erros)) {
-	resposta, err := f(r)
+// RotaRelatorioDia retorna todas as transações feitas em um determinado dia
+// no campo "data" (YYYY-MM-DD)
+func RotaRelatorioDia(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
+		return
+	}
+
+	autenticado, _ := autenticaUsuario(w, r)
+	if !autenticado {
+		return
+	}
+
+	// Se o erro gerado for externo, envia os erros para o usuário. Se não,
+	// envia apenas um status code indicando erro interno. Se não houve erro
+	// gerado, envia status code de sucesso.
+	resposta, err := transacao.TransacoesDiaHTTP(r)
 	if !erros.Vazio(err) {
 		interno, status, _ := erros.Abre(err)
 		if !interno {
@@ -101,13 +122,27 @@ func respostaPadraoComRetorno(w http.ResponseWriter, r *http.Request, statusSuce
 		comunicacao.Responde(w, status, []byte{})
 		return
 	}
-	comunicacao.Responde(w, http.StatusCreated, resposta)
+	comunicacao.Responde(w, http.StatusOK, resposta)
 }
 
-// respostaPadraoAutenticada é idêntica à respostaPadrao, mas autentica o
-// usuário com autenticaUsuarioPost antes de proceder às operações
-func respostaPadraoAutenticada(w http.ResponseWriter, r *http.Request, statusSucesso int, f func(*http.Request) erros.Erros) {
-	if autenticado, err := autenticaUsuarioPost(r); !erros.Vazio(err) {
+// RotaRelatorioUsuario retorna todas as transações feitas em um determinado
+// usuário a partir de seu e-mail no campo "email"
+func RotaRelatorioUsuario(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		comunicacao.Responde(w, http.StatusMethodNotAllowed, []byte{})
+		return
+	}
+
+	autenticado, _ := autenticaUsuario(w, r)
+	if !autenticado {
+		return
+	}
+
+	// Se o erro gerado for externo, envia os erros para o usuário. Se não,
+	// envia apenas um status code indicando erro interno. Se não houve erro
+	// gerado, envia status code de sucesso.
+	resposta, err := transacao.TransacoesUsuarioHTTP(r)
+	if !erros.Vazio(err) {
 		interno, status, _ := erros.Abre(err)
 		if !interno {
 			comunicacao.RespondeErro(w, status, err)
@@ -115,34 +150,27 @@ func respostaPadraoAutenticada(w http.ResponseWriter, r *http.Request, statusSuc
 		}
 		comunicacao.Responde(w, status, []byte{})
 		return
-	} else if !autenticado {
-		comunicacao.Responde(w, http.StatusForbidden, []byte{})
-		return
 	}
-	respostaPadrao(w, r, statusSucesso, f)
+	comunicacao.Responde(w, http.StatusOK, resposta)
 }
 
-// respostaPadraoComRetorno funciona da mesma maneira que
-// respostaPadraoAutenticada, mas a função 'f' retorna uma array de bytes a ser
-// enviada para o cliente em caso de sucesso da operação
-func respostaPadraoAuthComRetorno(w http.ResponseWriter, r *http.Request, statusSucesso int, f func(*http.Request) ([]byte, erros.Erros)) {
-	if autenticado, err := autenticaUsuarioPost(r); !erros.Vazio(err) {
+// autenticaUsuario verifica se o usuário é cadastrado e se a senha está
+// correta utilizando Basic Auth e retorna, também, seu e-mail. Em caso de erro
+// de autenticação, a função responde devidamente ao cliente que o pedido foi
+// proibido (ou um erro ocorreu).
+func autenticaUsuario(w http.ResponseWriter, r *http.Request) (bool, string) {
+	autenticado, email, err := cadastro.VerificaLoginRequestHTTP(r)
+	if !erros.Vazio(err) {
 		interno, status, _ := erros.Abre(err)
 		if !interno {
 			comunicacao.RespondeErro(w, status, err)
-			return
+			return false, ""
 		}
 		comunicacao.Responde(w, status, []byte{})
-		return
+		return false, ""
 	} else if !autenticado {
 		comunicacao.Responde(w, http.StatusForbidden, []byte{})
-		return
+		return false, ""
 	}
-	respostaPadraoComRetorno(w, r, statusSucesso, f)
-}
-
-// autenticaUsuarioPost verifica se o usuário é cadastrado e se a senha está
-// correta a partir dos campos POST "email" e "senha"
-func autenticaUsuarioPost(r *http.Request) (bool, erros.Erros) {
-	return cadastro.VerificaLoginRequestHTTP(r)
+	return true, email
 }

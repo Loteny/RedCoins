@@ -56,10 +56,10 @@ func escutaConexoes() {
 // pedida do servidor
 func estabeleceRotas() {
 	http.HandleFunc("/cadastro", RotaCadastro)
-	http.HandleFunc("/compra", RotaCompra)
-	http.HandleFunc("/venda", RotaVenda)
-	http.HandleFunc("/relatorio/data", RotaRelatorioDia)
-	http.HandleFunc("/relatorio/usr", RotaRelatorioUsuario)
+	http.HandleFunc("/transacoes/compra", RotaCompra)
+	http.HandleFunc("/transacoes/venda", RotaVenda)
+	http.HandleFunc("/relatorios/data", RotaRelatorioDia)
+	http.HandleFunc("/relatorios/usuario", RotaRelatorioUsuario)
 }
 
 func main() {
