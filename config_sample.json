@@ -1,7 +1,7 @@
 {
     "database": {
         "usuarioDb": "root",
-        "senhaDb": "tvM@v:2gj@A')cH5",
+        "senhaDb": "tvMv2gjAcH5a",
         "dbNome": "redcoins",
         "testDbNome": "redcoins_teste",
         "enderecoDb": "host.docker.internal:3306"

@@ -12,11 +12,23 @@ Para utilizar, pode-se utilizar o Docker do projeto. No diretório root deste re
 docker build -t leoschsenna/redcoins-sv .
 ```
 
+Ou pode-se adquirir o projeto em cloud:
+
+```bash
+docker pull leoschsenna/redcoins-sv
+```
+
+Também é necessário adquirir o repositório de MySQL:
+
+```bash
+docker pull mysql
+```
+
 Com a imagem gerada, basta executar o projeto com o arquivo docs/docker-compose.yml:
 
 ```bash
 docker swarm init
-docker stack -c docs/docker-compose.yml rds
+docker stack deploy -c docs/docker-compose.yml rds
 ```
 
 Para parar o servidor:

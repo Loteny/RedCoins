@@ -5,7 +5,7 @@ services:
     command: --default-authentication-plugin=mysql_native_password
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: tvM@v:2gj@A')cH5
+      MYSQL_ROOT_PASSWORD: tvMv2gjAcH5a
     ports:
       - "3306:3306"
     networks:
