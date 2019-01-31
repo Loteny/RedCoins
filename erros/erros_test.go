@@ -9,6 +9,8 @@ import (
 )
 
 func TestCria(t *testing.T) {
+	// Cria um erro interno de status code 200 e mensagem determinada e verifica
+	// se o erro criado matém características
 	msg := make([]string, 1)
 	msg[0] = "mensagem de teste de erro"
 	original := Erros{interno: true, statusCode: 200, msg: msg}
@@ -23,6 +25,8 @@ func TestCria(t *testing.T) {
 }
 
 func TestCriaVazio(t *testing.T) {
+	// Verifica se a função cria um erro vazio correto (externo, statusCode 0 e
+	// sem mensagens)
 	e := CriaVazio()
 	if e.interno != false ||
 		len(e.msg) != 0 ||
@@ -35,6 +39,8 @@ func TestCriaInternoPadrao(t *testing.T) {
 	err := errors.New("mensagem de teste de erro")
 	gerado := CriaInternoPadrao(err)
 
+	// Verifica as características apropriadas de um erro interno padrão (mesma
+	// mensagem que a passada, flag de erro interno e status code 500)
 	if gerado.Error() != err.Error() {
 		t.Errorf("Mensagens de erros diferentes.\nGerado: %v\nOriginal: %v",
 			gerado, err)
@@ -49,6 +55,7 @@ func TestCriaInternoPadrao(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
+	// Verificação da implementação da interface 'error'
 	msg := "mensagem de teste de erro"
 	e := Cria(true, 500, msg)
 	msgRecebida := e.Error()
@@ -79,14 +86,6 @@ func TestAbre(t *testing.T) {
 	}
 }
 
-func TestAdiciona(t *testing.T) {
-	e := Cria(true, 500, "erro 1")
-	e = Adiciona(e, "erro 2")
-	if e.msg[0] != "erro 1" || e.msg[1] != "erro 2" {
-		t.Errorf("Mensagens de erros inesperadas.\n1: %v\n2: %v", e.msg[0], e.msg[1])
-	}
-}
-
 func TestJuntaErros(t *testing.T) {
 	// Testa união de dois erros não-internos
 	e1 := Cria(false, 500, "e1")
@@ -110,7 +109,7 @@ func TestVazio(t *testing.T) {
 		t.Errorf("Erro diz que não está vazio quando está.")
 	}
 	// Erro com item
-	e = Adiciona(e, "erro 1")
+	e = JuntaErros(e, errors.New("erro 1"))
 	if Vazio(e) {
 		t.Errorf("Erro diz que está vazio quando não está.")
 	}
@@ -118,15 +117,16 @@ func TestVazio(t *testing.T) {
 
 func TestLista(t *testing.T) {
 	e := Cria(false, 400, "err1")
-	e = Adiciona(e, "err2")
+	e = JuntaErros(e, Cria(false, 400, "err2"))
 	lista := Lista(e)
 	if len(lista) != 2 || lista[0] != "err1" || lista[1] != "err2" {
 		t.Errorf("Valor incorreto da lista de erros: %v", lista)
 	}
 }
 
-// testAbre é a função base para os testes da função Abre. Outras funções de
-// teste da função Abre podem derivar dessa função
+// testAbre é a função base para os testes da função Abre. Essa função verifica
+// se a mensagem de erros está entrando no log corretamente e se os retornos da
+// função Abre (as características do erro) estão corretas.
 func testAbre(t *testing.T, interno bool) bytes.Buffer {
 	// Código para lermos o log de erros gerado pela função
 	var buf bytes.Buffer
