@@ -4,18 +4,20 @@ RedCoins é uma API para exchange de RedCoins.
 
 ## Instruções
 
-A API funciona apenas com HTTPS e possui certificado TLS auto-assinado.
+A API funciona com HTTPS e possui certificado TLS auto-assinado. Também é possível iniciar o servidor em HTTP com o primeiro argumento para execução ```--sem-tls```.
 
 Para utilizar, pode-se utilizar o Docker do projeto. No diretório root deste repositório, o arquivo Dockerfile pode gerar a imagem Docker para rodar o projeto:
 
 ```bash
-docker build -t leoschsenna/redcoins-sv .
+docker build -t leoschsenna/redcoins-sv:https . -f docs/Dockerfile_HTTPS
+docker build -t leoschsenna/redcoins-sv:http . -f docs/Dockerfile_HTTP
 ```
 
 Ou pode-se adquirir o projeto em cloud:
 
 ```bash
-docker pull leoschsenna/redcoins-sv
+docker pull leoschsenna/redcoins-sv:https
+docker pull leoschsenna/redcoins-sv:http
 ```
 
 Também é necessário adquirir o repositório de MySQL:

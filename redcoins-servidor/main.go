@@ -9,8 +9,10 @@ import (
 	"github.com/loteny/redcoins/database"
 )
 
-// addr especifica o endereço (incluindo porta) do servidor
-var addr string
+// addrHTTPS e addrHTTP especificam o endereço (incluindo porta) do servidor
+// utilizando HTTPS e HTTP, respectivamente
+var addrHTTPS string
+var addrHTTP string
 
 // pem e key especificam a localização em disco dos arquivos para TLS (se o path
 // for relativo, é em relação ao executável do servidor)
@@ -20,9 +22,10 @@ var key string
 // config é a estrutura com as configurações do servidor
 type config struct {
 	RedcoinsServidor struct {
-		Addr string `json:"addr"`
-		Pem  string `json:"pem"`
-		Key  string `json:"key"`
+		AddrHTTPS string `json:"addrHttps"`
+		AddrHTTP  string `json:"addrHttp"`
+		Pem       string `json:"pem"`
+		Key       string `json:"key"`
 	} `json:"redcoins-servidor"`
 }
 
@@ -36,17 +39,27 @@ func init() {
 	if err := json.NewDecoder(arquivoConfig).Decode(&c); err != nil {
 		log.Fatalf("Erro ao ler configurações do servidor: %s", err)
 	}
-	addr = c.RedcoinsServidor.Addr
+	addrHTTPS = c.RedcoinsServidor.AddrHTTPS
+	addrHTTP = c.RedcoinsServidor.AddrHTTP
 	pem = c.RedcoinsServidor.Pem
 	key = c.RedcoinsServidor.Key
 }
 
 // escutaConexoes estabelece as rotas do servidor, coloca o servidor em modo de
 // escuta por novos clientes e os envia para a função apropriada para processar
-// o pedido do cliente e respondê-lo
+// o pedido do cliente e respondê-lo.
+// Se o programa foi chamado com --sem-tls, o servidor se comunica com HTTP ao
+// invés de HTTPS
 func escutaConexoes() {
 	estabeleceRotas()
-	err := http.ListenAndServeTLS(addr, pem, key, nil)
+	if len(os.Args) > 1 && os.Args[1] == "--sem-tls" {
+		err := http.ListenAndServe(addrHTTP, nil)
+		if err != nil {
+			log.Fatalf("Erro na função ListenAndServeTLS: %s", err)
+		}
+		return
+	}
+	err := http.ListenAndServeTLS(addrHTTPS, pem, key, nil)
 	if err != nil {
 		log.Fatalf("Erro na função ListenAndServeTLS: %s", err)
 	}

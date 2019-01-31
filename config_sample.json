@@ -7,8 +7,10 @@
         "enderecoDb": "host.docker.internal:3306"
     },
     "redcoins-servidor": {
-        "addr": "0.0.0.0:443",
+        "addrHttps": "0.0.0.0:443",
+        "addrHttp": "0.0.0.0:80",
         "pem": "../src/github.com/loteny/redcoins/certs/server.pem",
-        "key": "../src/github.com/loteny/redcoins/certs/server.key"
+        "key": "../src/github.com/loteny/redcoins/certs/server.key",
+        "tls": true
     }
 }

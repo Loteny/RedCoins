@@ -229,3 +229,4 @@ host: localhost
 basePath: /
 schemes:
  - https
+ - http
