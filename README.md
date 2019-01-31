@@ -82,3 +82,13 @@ curl -X GET "https://{link do servidor}/relatorios/usuario?email={e-mail do usu�
 curl -X GET "https://{e-mail}:{senha}@{link do servidor}/relatorios/data?data={data das transações}" -H "accept: application/json" -k -v
 curl -X GET "https://{link do servidor}/relatorios/data?data={data das transações}" -H "accept: application/json" -H "authorization: Basic {autenticação do usuário}" -k -v
 ```
+
+## Certificados TLS
+
+Os certificados TLS foram gerados utilizando o seguinte formato de comando:
+
+```bash
+openssl req -new -nodes -x509 -out certs/server.pem -keyout certs/server.key -days 3650 -subj "//C=BR\ST=ES\L=Cidade\O=Organização\OU=IT\emailAddress=email@gmail.com"
+```
+
+Caso seja necessário ou desejado gerar outros certificados TLS, esse comando pode ser utilizado.
