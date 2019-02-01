@@ -33,6 +33,7 @@ func init() {
 	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
 
 	// Inicializa o banco de dados com alguns valores padrões
+	testPopulaDatabase()
 }
 
 func TestInsereUsuario(t *testing.T) {
@@ -148,5 +149,67 @@ func TestAdquireTransacoesEmDia(t *testing.T) {
 		`{teste@gmail.com false 253 0.00029 2018-03-07}]`
 	if valorEsperado != fmt.Sprintf("%v", transacoes) {
 		t.Errorf("Lista de transações possui valor inesperado: %v", transacoes)
+	}
+}
+
+// testPopulaDatabase deleta o banco de dados de testes, cria novamente e cria:
+// - 2 usuários
+// - 2 compras em dias diferentes, uma parada cada usuário
+// - 2 vendas em dias diferentes, uma para cada usuário
+// A venda do usuário 1 ocorre no mesmo dia que a compra do usuário 2.
+func testPopulaDatabase() {
+	// Recria o banco de dados
+	testResetaDatabase()
+	db, err := sql.Open("mysql", dsn)
+	defer db.Close()
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	// Usuários
+	sqlCode := `INSERT INTO usuario
+		(email, senha, nome, nascimento)
+		VALUES
+			("valido1@gmail.com", "senhavalido1", "Conta Válida 1", "1994-03-07"),
+			("valido2@gmail.com", "senhavalido2", "Conta Válida 2", "1994-03-08");`
+	if _, err := db.Exec(sqlCode); err != nil {
+		log.Fatalf("%v", err)
+	}
+	// Transações
+	sqlCode = `INSERT INTO transacao
+		(usuario_id, compra, creditos, bitcoins, dia)
+		VALUES
+			(1, 1, 10, 0.004, "2018-01-01"),
+			(2, 1, 20, 0.003, "2018-01-02"),
+			(1, 0, 30, 0.002, "2018-01-02"),
+			(2, 0, 40, 0.001, "2018-01-03");`
+	if _, err := db.Exec(sqlCode); err != nil {
+		log.Fatalf("%v", err)
+	}
+}
+
+// testResetaDatabase deleta o banco de dados e cria novamente
+func testResetaDatabase() {
+	// Deleta o banco de dados
+	tempDSN := usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/"
+	db, err := sql.Open("mysql", tempDSN)
+	defer db.Close()
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	sqlCode := `DROP DATABASE IF EXISTS ` + testDbNome + `;`
+	if _, err = db.Exec(sqlCode); err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	// Cria o banco de dados
+	sqlCode = `CREATE DATABASE ` + testDbNome + ` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
+	if _, err := db.Exec(sqlCode); err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	// Cria as tabelas
+	if err := criaTabelas(); err != nil {
+		log.Fatalf("%v", err)
 	}
 }
