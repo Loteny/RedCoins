@@ -7,15 +7,15 @@ import (
 	"github.com/loteny/redcoins/erros"
 )
 
-func TestEmailValido(t *testing.T) {
-	if err := email("teste@gmail.com"); !erros.Vazio(err) {
-		t.Errorf("Erro retornado: %v", err)
-	}
-}
-
 func TestEmailInvalido(t *testing.T) {
+	// E-mail válido
+	if err := email("teste@gmail.com"); !erros.Vazio(err) {
+		t.Errorf("E-mail deveria ser válido e retornou o seguinte erro: %v", err)
+	}
+
+	// Formato inválido
 	if err := email("emailinvalido.com"); err.Error() != ErrEmailInvalido.Error() {
-		t.Errorf("Erro retornado: %v", err)
+		t.Errorf("E-mail deveria ser inválido e retornou o seguinte erro: %v", err)
 	}
 }
 

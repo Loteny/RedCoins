@@ -51,6 +51,10 @@ func Cria(interno bool, statusCode int, msg string) Erros {
 // CriaVazio gera uma nova estrutura 'Erros' sem uma mensagens de erros. Útil
 // para preparar para uma possível lista de erros. O erro criado não é interno
 // e possui statusCode 0.
+// O erro criado não ser interno permite o erro vazio a juntar com um erro
+// externo, deixando o erro externo predominar sobre o erro vazio, resultando em
+// um externo. Se o erro vazio fosse interno, ele predominaria sobre o interno,
+// e o resultado da união seria um erro interno.
 func CriaVazio() Erros {
 	return Erros{interno: false, statusCode: 0, msg: []string{}}
 }
@@ -97,20 +101,6 @@ func Abre(e error) (bool, int, Erros) {
 		log.Print(e)
 	}
 	return objErros.interno, objErros.statusCode, objErros
-}
-
-// Adiciona insere um erro na lista de erros da struct. Se o erro não for do
-// tipo Erros, não adiciona e simplesmente retorna o erro original.
-func Adiciona(e error, msg string) Erros {
-	if e == nil {
-		return CriaVazio()
-	}
-	objErros, sucesso := e.(Erros)
-	if !sucesso {
-		return CriaInternoPadrao(e)
-	}
-	objErros.msg = append(objErros.msg, msg)
-	return objErros
 }
 
 // JuntaErros une dois erros. Se um dos erros for interno, este prevalecerá

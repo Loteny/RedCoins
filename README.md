@@ -59,6 +59,17 @@ Para enviar requests para o servidor, pode-se utilizar os comandos de cURL gerad
 
 A API está documentada no arquivo docs/documentacao_api.yaml. Um diagrama do banco de dados está presente em docs/diagrama_db.png.
 
+## Instruções para testes
+
+Para executar os testes de packages que dependem de banco de dados, é necessário adicionar o arquivo config.json dentro de sua pasta para realizar os testes da package. Por exemplo, para executar os testes da package cadastro, é necessário que haja um arquivo config.json com as configurações corretas no diretório do módulo (ficando lado a lado com o arquivo cadastro.go, por exemplo). As packages que dependem do config.json no mesmo diretório para realizar os testes são:
+
+- cadastro
+- database
+- redcoins-servidor (main)
+- transacao
+
+A package database não pode executar todos os testes da package simultaneamente. Os testes no arquivo schema_test.go devem ser todos executados individualmente. Os outros testes podem ser executados simultaneamente.
+
 ## Comandos cURL
 
 Aqui estão listados alguns comandos de cURL para testes. Parâmetros em {chaves} devem ser substituídos pelos valores reais. Cada comando possui dois exemplos: por link, onde os dados da Basic Auth vão no path do pedido onde caracteres especiais devem estar encodados com percent encode (por exemplo, @ se torna %40), e por parâmetro, onde os credenciais devem estar em base64 (exceto o cadastro de usuário, que não requer autenticação).

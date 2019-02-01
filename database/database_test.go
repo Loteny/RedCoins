@@ -6,72 +6,45 @@ package database
 import (
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"log"
+	"os"
 	"testing"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
-func TestCriaTabelas(t *testing.T) {
-	// Abre o banco de dados de testes
-	backupDsn := testAlteraDsn()
-	defer testRetornaDsn(backupDsn)
-	db, err := sql.Open("mysql", dsn)
+func init() {
+	// Inicializa as configurações do módulo com o arquivo config.json
+	arquivoConfig, err := os.Open("./config.json")
 	if err != nil {
-		t.Fatalf("Erro ao abrir o banco de dados: %v", err)
+		log.Fatalf("Erro ao abrir arquivo de configurações da database: %s", err)
 	}
-
-	// Lista todas as tabelas a serem criadas
-	// Atenção para a ordem da lista: as tabelas serão deletadas nessa ordem,
-	// com verificações de foreign keys. Isso pode fazer com que uma tabela não
-	// possa ser deletada porque é referenciada por uma outra.
-	tabelas := [2]string{"transacao", "usuario"}
-
-	// Deleta as tabelas se existem
-	for _, tabela := range tabelas {
-		testDeletaTabela(t, db, tabela)
+	var c config
+	if err := json.NewDecoder(arquivoConfig).Decode(&c); err != nil {
+		log.Fatalf("Erro ao ler configurações da database: %s", err)
 	}
+	usuarioDb = c.Database.UsuarioDb
+	senhaDb = c.Database.SenhaDb
+	dbNome = c.Database.TestDbNome
+	testDbNome = c.Database.TestDbNome
+	enderecoDb = c.Database.EnderecoDb
+	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
 
-	// Cria as tabelas
-	if err := criaTabelas(); err != nil {
-		t.Fatalf("Erro inesperado: %v", err)
-	}
-
-	// Verifica se as tabelas existem
-	for _, tabela := range tabelas {
-		sqlCode := `SELECT COUNT(*)
-			FROM information_schema.tables
-			WHERE
-				TABLE_SCHEMA = ? AND
-				TABLE_NAME = ?;`
-		var qtdTabelas int
-		rows := db.QueryRow(sqlCode, testDbNome, tabela)
-		if err := rows.Scan(&qtdTabelas); err != nil {
-			if err == sql.ErrNoRows {
-				t.Errorf("Tabela %v não foi criada.", tabela)
-			} else {
-				t.Fatalf("Erro inesperado na query: %v", err)
-			}
-		}
-		if qtdTabelas != 1 {
-			t.Errorf("Quantidade inesperada de tabelas: %v (deveria ser 1)",
-				qtdTabelas)
-		}
-	}
+	// Inicializa o banco de dados com alguns valores padrões
+	testPopulaDatabase()
 }
 
 func TestInsereUsuario(t *testing.T) {
+	// Usuário a ser criado
 	usr := Usuario{
-		Email:      "teste@gmail.com",
+		Email:      "testeinsereusuario@gmail.com",
 		Senha:      []byte("123456"),
 		Nascimento: "1942-07-10",
 		Nome:       "Ronnie James Dio",
 	}
 
-	// Altera o banco de dados usado pelo módulo para usar o de testes
-	backupDsn := dsn
-	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
-	defer func() { dsn = backupDsn }()
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		t.Fatalf("Erro ao abrir o banco de dados: %v", err)
@@ -85,9 +58,8 @@ func TestInsereUsuario(t *testing.T) {
 	sqlCode := `SELECT email, senha, nome, nascimento
 		FROM usuario
 		WHERE email=?;`
-	row := db.QueryRow(sqlCode, usr.Email)
 	usrResposta := Usuario{}
-	if err := row.Scan(
+	if err := db.QueryRow(sqlCode, usr.Email).Scan(
 		&usrResposta.Email,
 		&usrResposta.Senha,
 		&usrResposta.Nome,
@@ -108,17 +80,12 @@ func TestInsereUsuario(t *testing.T) {
 }
 
 func TestAdquireSenhaHashed(t *testing.T) {
-	// Altera o banco de dados usado pelo módulo para usar o de testes
-	backupDsn := dsn
-	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
-	defer func() { dsn = backupDsn }()
-
 	// Usuário existente
-	senha, err := AdquireSenhaHashed("teste@gmail.com")
+	senha, err := AdquireSenhaHashed("valido1@gmail.com")
 	if err != nil {
 		t.Fatalf("Erro inesperado ao adquirir senha: %v", err)
 	}
-	if string(senha) != "123456" {
+	if string(senha) != "senhavalido1" {
 		t.Errorf("Senha retornada incorretamente: %v", senha)
 	}
 
@@ -130,170 +97,112 @@ func TestAdquireSenhaHashed(t *testing.T) {
 }
 
 func TestInsereTransacao(t *testing.T) {
-	backupDsn := testAlteraDsn()
-	defer testRetornaDsn(backupDsn)
-
-	// Limpa a tabela de transações
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		t.Fatalf("Erro ao abrir banco de dados: %v", err)
-	}
-	testLimpaTabela(t, db, "transacao")
-
 	// Compra inicial que não deve dar erros
-	err = InsereTransacao("teste@gmail.com", true, 0.00001, 0.00001, "2018-01-01")
+	err := InsereTransacao("valido3@gmail.com", true, 0.00001, 0.00001, "2012-01-01")
 	if err != nil {
 		t.Fatalf("Erro inesperado na transação: %v", err)
 	}
 
 	// Venda que deve ocorrer corretamente
-	err = InsereTransacao("teste@gmail.com", false, 0.000005, 0.00001, "2018-01-01")
+	err = InsereTransacao("valido3@gmail.com", false, 0.000005, 0.00001, "2012-01-01")
 	if err != nil {
 		t.Fatalf("Erro inesperado na transação: %v", err)
 	}
 
 	// Venda que deve acarretar em saldo insuficiente
-	err = InsereTransacao("teste@gmail.com", false, 0.00000501, 0.00001, "2018-01-01")
+	err = InsereTransacao("valido3@gmail.com", false, 0.00000501, 0.00001, "2012-01-01")
 	if err != ErrSaldoInsuficiente {
 		t.Fatalf("Erro inesperado na transação: %v", err)
 	}
 }
 
 func TestAdquireTransacoesDeUsuario(t *testing.T) {
-	backupDsn := testAlteraDsn()
-	defer testRetornaDsn(backupDsn)
-
-	// Popula as tabelas do banco de dados
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		t.Fatalf("Erro ao abrir banco de dados: %v", err)
-	}
-	testPopulaTabelas(t, db)
-
-	transacoes, err := AdquireTransacoesDeUsuario("teste@gmail.com")
+	// Utiliza a conta valido1@gmail.com para checar as transações
+	transacoes, err := AdquireTransacoesDeUsuario("valido1@gmail.com")
 	if err != nil {
 		t.Errorf("Erro inesperado ao adquirir transações: %v", err)
 	}
 
-	valorEsperado := `[{teste@gmail.com true 1350 0.001 2018-03-07} ` +
-		`{teste@gmail.com false 253 0.00029 2018-03-07} ` +
-		`{teste@gmail.com false 563 0.00045 2018-08-27}]`
+	valorEsperado := `[{valido1@gmail.com true 10 0.004 2018-01-01} ` +
+		`{valido1@gmail.com false 30 0.002 2018-01-02}]`
 	if valorEsperado != fmt.Sprintf("%v", transacoes) {
 		t.Errorf("Lista de transações possui valor inesperado: %v", transacoes)
 	}
 }
 
 func TestAdquireTransacoesEmDia(t *testing.T) {
-	backupDsn := testAlteraDsn()
-	defer testRetornaDsn(backupDsn)
-
-	// Popula as tabelas do banco de dados
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		t.Fatalf("Erro ao abrir banco de dados: %v", err)
-	}
-	testPopulaTabelas(t, db)
-
-	transacoes, err := AdquireTransacoesEmDia("2018-03-07")
+	// Utiliza a data 2018-01-02 para checar as transações
+	transacoes, err := AdquireTransacoesEmDia("2018-01-02")
 	if err != nil {
 		t.Errorf("Erro inesperado ao adquirir transações: %v", err)
 	}
 
-	valorEsperado := `[{teste@gmail.com true 1350 0.001 2018-03-07} ` +
-		`{teste@gmail.com false 253 0.00029 2018-03-07}]`
+	valorEsperado := `[{valido2@gmail.com true 20 0.003 2018-01-02} ` +
+		`{valido1@gmail.com false 30 0.002 2018-01-02}]`
 	if valorEsperado != fmt.Sprintf("%v", transacoes) {
 		t.Errorf("Lista de transações possui valor inesperado: %v", transacoes)
 	}
 }
 
-// testAlteraDsn faz com que o módulo use o banco de dados de testes
-func testAlteraDsn() string {
-	backupDsn := dsn
-	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
-	return backupDsn
-}
+// testPopulaDatabase deleta o banco de dados de testes, cria novamente e cria:
+// - 3 usuários, sendo o último sem transação
+// - 2 compras em dias diferentes, uma parada cada usuário
+// - 2 vendas em dias diferentes, uma para cada usuário
+// A venda do usuário 1 ocorre no mesmo dia que a compra do usuário 2.
+func testPopulaDatabase() {
+	// Recria o banco de dados
+	testResetaDatabase()
+	db, err := sql.Open("mysql", dsn)
+	defer db.Close()
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
 
-// testRetornaDsn desfaz a função testAlteraDsn
-func testRetornaDsn(backupDsn string) {
-	dsn = backupDsn
-}
-
-// testDeletaTabela deleta a tabela se existir
-func testDeletaTabela(t *testing.T, db *sql.DB, tabela string) {
-	sqlCode := `DROP TABLE IF EXISTS ` + tabela + `;`
+	// Usuários
+	sqlCode := `INSERT INTO usuario
+		(email, senha, nome, nascimento)
+		VALUES
+			("valido1@gmail.com", "senhavalido1", "Conta Válida 1", "1994-03-07"),
+			("valido2@gmail.com", "senhavalido2", "Conta Válida 2", "1994-03-08"),
+			("valido3@gmail.com", "senhavalido3", "Conta Válida 3", "1994-03-08");`
 	if _, err := db.Exec(sqlCode); err != nil {
-		t.Fatalf("Erro inesperado ao deletar tabela %v: %v", tabela, err)
+		log.Fatalf("%v", err)
 	}
-}
-
-// testLimpaTabela realiza a função 'truncate' na tabela selecionada
-func testLimpaTabela(t *testing.T, db *sql.DB, tabela string) {
-	sqlCode := `SET FOREIGN_KEY_CHECKS = 0;`
+	// Transações
+	sqlCode = `INSERT INTO transacao
+		(usuario_id, compra, creditos, bitcoins, dia)
+		VALUES
+			(1, 1, 10, 0.004, "2018-01-01"),
+			(2, 1, 20, 0.003, "2018-01-02"),
+			(1, 0, 30, 0.002, "2018-01-02"),
+			(2, 0, 40, 0.001, "2018-01-03");`
 	if _, err := db.Exec(sqlCode); err != nil {
-		t.Fatalf("Erro inesperado ao limpar tabela %v: %v", tabela, err)
+		log.Fatalf("%v", err)
 	}
-	sqlCode = `TRUNCATE TABLE ` + tabela + `;`
+}
+
+// testResetaDatabase deleta o banco de dados e cria novamente
+func testResetaDatabase() {
+	// Deleta o banco de dados
+	tempDSN := usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/"
+	db, err := sql.Open("mysql", tempDSN)
+	defer db.Close()
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	sqlCode := `DROP DATABASE IF EXISTS ` + testDbNome + `;`
+	if _, err = db.Exec(sqlCode); err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	// Cria o banco de dados
+	sqlCode = `CREATE DATABASE ` + testDbNome + ` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
 	if _, err := db.Exec(sqlCode); err != nil {
-		t.Fatalf("Erro inesperado ao limpar tabela %v: %v", tabela, err)
-	}
-	sqlCode = `SET FOREIGN_KEY_CHECKS = 1;`
-	if _, err := db.Exec(sqlCode); err != nil {
-		t.Fatalf("Erro inesperado ao limpar tabela %v: %v", tabela, err)
-	}
-}
-
-// testPopulaTabelas popula todas as tabelas do banco de dados com uma variação
-// de dados. Essa função limpa as tabelas antes de popular.
-func testPopulaTabelas(t *testing.T, db *sql.DB) {
-	testLimpaTabela(t, db, "transacao")
-	testLimpaTabela(t, db, "usuario")
-	testPopulaUsuario(t, db)
-	testPopulaTransacao(t, db)
-}
-
-// testPopulaUsuario popula a tabela de usuários
-func testPopulaUsuario(t *testing.T, db *sql.DB) {
-	usr := Usuario{
-		Email:      "teste@gmail.com",
-		Senha:      []byte("123456"),
-		Nascimento: "1942-07-10",
-		Nome:       "Ronnie James Dio",
-	}
-	if err := InsereUsuario(&usr); err != nil {
-		t.Fatalf("Erro ao popular tabela de usuários: %v", err)
+		log.Fatalf("%v", err)
 	}
 
-	usr = Usuario{
-		Email:      "segundo@hotmail.com",
-		Senha:      []byte("password"),
-		Nascimento: "1946-09-05",
-		Nome:       "Freddie Mercury",
-	}
-	if err := InsereUsuario(&usr); err != nil {
-		t.Fatalf("Erro ao popular tabela de usuários: %v", err)
-	}
-}
-
-// testPopulaTransacao popula a tabela de transações (dependente de dados
-// inseridos com a função testPopulaUsuario)
-func testPopulaTransacao(t *testing.T, db *sql.DB) {
-	// As duas primeiras transações do primeiro usuário serão no mesmo dia (07/03/2018)
-
-	// Primeiro usuário
-	// Compra de algumas Bitcoins
-	if err := InsereTransacao("teste@gmail.com", true, 0.001, 1350, "2018-03-07"); err != nil {
-		t.Fatalf("Erro ao popular tabela de transações: %v", err)
-	}
-	// Vendas de algumas Bitcoins
-	if err := InsereTransacao("teste@gmail.com", false, 0.00029, 253, "2018-03-07"); err != nil {
-		t.Fatalf("Erro ao popular tabela de transações: %v", err)
-	}
-	if err := InsereTransacao("teste@gmail.com", false, 0.00045, 563, "2018-08-27"); err != nil {
-		t.Fatalf("Erro ao popular tabela de transações: %v", err)
-	}
-
-	// Uma simples transação para um segundo usuário
-	if err := InsereTransacao("segundo@hotmail.com", true, 0.023, 5826, "2019-01-02"); err != nil {
-		t.Fatalf("Erro ao popular tabela de transações: %v", err)
+	// Cria as tabelas
+	if err := criaTabelas(); err != nil {
+		log.Fatalf("%v", err)
 	}
 }

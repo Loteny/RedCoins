@@ -8,10 +8,10 @@ import (
 	"github.com/loteny/redcoins/erros"
 )
 
-// email verifica se o e-mail é válido (formato regex /.+@.+/) e possui pelo
-// menos 3 caracteres e no máximo 128 caracteres
+// email verifica se o e-mail é válido (formato regex /.+@.+/) e possui no
+// máximo 128 caracteres
 func email(email string) erros.Erros {
-	if utf8.RuneCountInString(email) < 3 || utf8.RuneCountInString(email) > 128 {
+	if utf8.RuneCountInString(email) > 128 {
 		return ErrEmailInvalido
 	}
 	return validacaoMatchSimples(email, "^.+@.+$", ErrEmailInvalido)
