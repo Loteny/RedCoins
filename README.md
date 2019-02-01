@@ -75,14 +75,7 @@ A API está documentada no arquivo docs/documentacao_api.yaml. Um diagrama do ba
 
 ## Instruções para testes
 
-Para executar os testes de packages que dependem de banco de dados, é necessário adicionar o arquivo config.json dentro de sua pasta para realizar os testes da package. Por exemplo, para executar os testes da package cadastro, é necessário que haja um arquivo config.json com as configurações corretas no diretório do módulo (ficando lado a lado com o arquivo cadastro.go, por exemplo). As packages que dependem do config.json no mesmo diretório para realizar os testes são:
-
-- cadastro
-- database
-- redcoins-servidor (main)
-- transacao
-
-A package database não pode executar todos os testes da package simultaneamente. Os testes no arquivo schema_test.go devem ser todos executados individualmente. Os outros testes podem ser executados simultaneamente.
+Os testes da package database estão separados em dois arquivos: schema_test.go e database_test.go. Os testes em schema_test.go devem ser executados individualmente devido à natureza das operações de alteração da estrutura do banco de dados em si. Os testes em database_test.go podem ser executados todos em paralelo.
 
 ## Comandos cURL
 
