@@ -53,7 +53,21 @@ E a instalação do servidor:
 go install github.com/loteny/redcoins/redcoins-servidor
 ```
 
-Também é necessário configurar o servidor adequadamente. Para isso, deve-se criar uma cópia do arquivo config_sample.json, renomeá-la para config.json e colocá-la no mesmo diretório que o executável do servidor. Depois, basta executar o servidor normalmente. O servidor é capaz de criar o banco de dados e suas tabelas durante sua inicialização.
+Também é necessário configurar o servidor adequadamente. Para isso, podem ser utilizadas variáveis do ambiente. As variáveis de ambiente do servidor começam com REDCOINS_, e são acompanhadas de um outro prefixo indicando seu package (SV_ para o servidor e DB_ para o banco de dados). Abaixo estão listadas todas as variáveis de ambiente que o projeto usa em formato de um exemplo de como configurá-las utilizando Windows:
+
+```bash
+SET REDCOINS_SV_ADDRHTTPS=0.0.0.0:443
+SET REDCOINS_SV_ADDRHTTP=0.0.0.0:80
+SET REDCOINS_SV_PEM=../src/github.com/loteny/redcoins/certs/server.pem
+SET REDCOINS_SV_KEY=../src/github.com/loteny/redcoins/certs/server.key
+SET REDCOINS_DB_USR=root
+SET REDCOINS_DB_SENHA=tvMv2gjAcH5a
+SET REDCOINS_DB_DBNOME=redcoins
+SET REDCOINS_DB_TESTEDBNOME=redcoins_teste
+SET REDCOINS_DB_DBADDR=host.docker.internal:3306
+```
+
+O servidor é capaz de criar o banco de dados e suas tabelas durante sua inicialização. Portanto, é necessário apenas que o servidor seja configurado para utilizar um usuário com permissões para criar e gerenciar banco de dados.
 
 Para enviar requests para o servidor, pode-se utilizar os comandos de cURL gerados pelo Swagger a partir da documentação, porém, é necessário o acréscimo do parâmetro ```-k``` para aceitar conexões inseguras, já que o servidor possui certificado TLS auto-assinado.
 

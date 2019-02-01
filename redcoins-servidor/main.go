@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -30,19 +29,11 @@ type config struct {
 }
 
 func init() {
-	// Inicializa as configurações do módulo com o arquivo config.json
-	arquivoConfig, err := os.Open("./config.json")
-	if err != nil {
-		log.Fatalf("Erro ao abrir arquivo de configurações do servidor: %s", err)
-	}
-	var c config
-	if err := json.NewDecoder(arquivoConfig).Decode(&c); err != nil {
-		log.Fatalf("Erro ao ler configurações do servidor: %s", err)
-	}
-	addrHTTPS = c.RedcoinsServidor.AddrHTTPS
-	addrHTTP = c.RedcoinsServidor.AddrHTTP
-	pem = c.RedcoinsServidor.Pem
-	key = c.RedcoinsServidor.Key
+	// Inicializa as configurações da package com as variáveis de ambiente
+	addrHTTPS = os.Getenv("REDCOINS_SV_ADDRHTTPS")
+	addrHTTP = os.Getenv("REDCOINS_SV_ADDRHTTP")
+	pem = os.Getenv("REDCOINS_SV_PEM")
+	key = os.Getenv("REDCOINS_SV_KEY")
 }
 
 // escutaConexoes estabelece as rotas do servidor, coloca o servidor em modo de

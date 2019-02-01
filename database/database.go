@@ -3,11 +3,9 @@ package database
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 
@@ -67,28 +65,19 @@ type config struct {
 	} `json:"database"`
 }
 
-// init lê o arquivo de configurações e configura o package corretamente
 func init() {
-	// Inicializa as configurações do módulo com o arquivo config.json
-	arquivoConfig, err := os.Open("./config.json")
-	if err != nil {
-		log.Fatalf("Erro ao abrir arquivo de configurações da database: %s", err)
-	}
-	var c config
-	if err := json.NewDecoder(arquivoConfig).Decode(&c); err != nil {
-		log.Fatalf("Erro ao ler configurações da database: %s", err)
-	}
-	usuarioDb = c.Database.UsuarioDb
-	senhaDb = c.Database.SenhaDb
-	dbNome = c.Database.DbNome
-	testDbNome = c.Database.TestDbNome
-	enderecoDb = c.Database.EnderecoDb
+	// Inicializa as configurações da package com as variáveis de ambiente
+	usuarioDb = os.Getenv("REDCOINS_DB_USR")
+	senhaDb = os.Getenv("REDCOINS_DB_SENHA")
+	dbNome = os.Getenv("REDCOINS_DB_DBNOME")
+	testDbNome = os.Getenv("REDCOINS_DB_TESTEDBNOME")
+	enderecoDb = os.Getenv("REDCOINS_DB_DBADDR")
 	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + dbNome
 
 	// Inicialização em modo de testes, já que esse módulo é utilizado nos
 	// testes de outros módulos
 	if flag.Lookup("test.v") != nil {
-		dbNome = c.Database.TestDbNome
+		dbNome = testDbNome
 		dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
 	}
 }
