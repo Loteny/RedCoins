@@ -37,17 +37,14 @@ func init() {
 }
 
 func TestInsereUsuario(t *testing.T) {
+	// Usuário a ser criado
 	usr := Usuario{
-		Email:      "teste@gmail.com",
+		Email:      "testeinsereusuario@gmail.com",
 		Senha:      []byte("123456"),
 		Nascimento: "1942-07-10",
 		Nome:       "Ronnie James Dio",
 	}
 
-	// Altera o banco de dados usado pelo módulo para usar o de testes
-	backupDsn := dsn
-	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
-	defer func() { dsn = backupDsn }()
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		t.Fatalf("Erro ao abrir o banco de dados: %v", err)
@@ -61,9 +58,8 @@ func TestInsereUsuario(t *testing.T) {
 	sqlCode := `SELECT email, senha, nome, nascimento
 		FROM usuario
 		WHERE email=?;`
-	row := db.QueryRow(sqlCode, usr.Email)
 	usrResposta := Usuario{}
-	if err := row.Scan(
+	if err := db.QueryRow(sqlCode, usr.Email).Scan(
 		&usrResposta.Email,
 		&usrResposta.Senha,
 		&usrResposta.Nome,
@@ -84,17 +80,12 @@ func TestInsereUsuario(t *testing.T) {
 }
 
 func TestAdquireSenhaHashed(t *testing.T) {
-	// Altera o banco de dados usado pelo módulo para usar o de testes
-	backupDsn := dsn
-	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
-	defer func() { dsn = backupDsn }()
-
 	// Usuário existente
-	senha, err := AdquireSenhaHashed("teste@gmail.com")
+	senha, err := AdquireSenhaHashed("valido1@gmail.com")
 	if err != nil {
 		t.Fatalf("Erro inesperado ao adquirir senha: %v", err)
 	}
-	if string(senha) != "123456" {
+	if string(senha) != "senhavalido1" {
 		t.Errorf("Senha retornada incorretamente: %v", senha)
 	}
 
@@ -107,53 +98,54 @@ func TestAdquireSenhaHashed(t *testing.T) {
 
 func TestInsereTransacao(t *testing.T) {
 	// Compra inicial que não deve dar erros
-	err := InsereTransacao("teste@gmail.com", true, 0.00001, 0.00001, "2018-01-01")
+	err := InsereTransacao("valido3@gmail.com", true, 0.00001, 0.00001, "2012-01-01")
 	if err != nil {
 		t.Fatalf("Erro inesperado na transação: %v", err)
 	}
 
 	// Venda que deve ocorrer corretamente
-	err = InsereTransacao("teste@gmail.com", false, 0.000005, 0.00001, "2018-01-01")
+	err = InsereTransacao("valido3@gmail.com", false, 0.000005, 0.00001, "2012-01-01")
 	if err != nil {
 		t.Fatalf("Erro inesperado na transação: %v", err)
 	}
 
 	// Venda que deve acarretar em saldo insuficiente
-	err = InsereTransacao("teste@gmail.com", false, 0.00000501, 0.00001, "2018-01-01")
+	err = InsereTransacao("valido3@gmail.com", false, 0.00000501, 0.00001, "2012-01-01")
 	if err != ErrSaldoInsuficiente {
 		t.Fatalf("Erro inesperado na transação: %v", err)
 	}
 }
 
 func TestAdquireTransacoesDeUsuario(t *testing.T) {
-	transacoes, err := AdquireTransacoesDeUsuario("teste@gmail.com")
+	// Utiliza a conta valido1@gmail.com para checar as transações
+	transacoes, err := AdquireTransacoesDeUsuario("valido1@gmail.com")
 	if err != nil {
 		t.Errorf("Erro inesperado ao adquirir transações: %v", err)
 	}
 
-	valorEsperado := `[{teste@gmail.com true 1350 0.001 2018-03-07} ` +
-		`{teste@gmail.com false 253 0.00029 2018-03-07} ` +
-		`{teste@gmail.com false 563 0.00045 2018-08-27}]`
+	valorEsperado := `[{valido1@gmail.com true 10 0.004 2018-01-01} ` +
+		`{valido1@gmail.com false 30 0.002 2018-01-02}]`
 	if valorEsperado != fmt.Sprintf("%v", transacoes) {
 		t.Errorf("Lista de transações possui valor inesperado: %v", transacoes)
 	}
 }
 
 func TestAdquireTransacoesEmDia(t *testing.T) {
-	transacoes, err := AdquireTransacoesEmDia("2018-03-07")
+	// Utiliza a data 2018-01-02 para checar as transações
+	transacoes, err := AdquireTransacoesEmDia("2018-01-02")
 	if err != nil {
 		t.Errorf("Erro inesperado ao adquirir transações: %v", err)
 	}
 
-	valorEsperado := `[{teste@gmail.com true 1350 0.001 2018-03-07} ` +
-		`{teste@gmail.com false 253 0.00029 2018-03-07}]`
+	valorEsperado := `[{valido2@gmail.com true 20 0.003 2018-01-02} ` +
+		`{valido1@gmail.com false 30 0.002 2018-01-02}]`
 	if valorEsperado != fmt.Sprintf("%v", transacoes) {
 		t.Errorf("Lista de transações possui valor inesperado: %v", transacoes)
 	}
 }
 
 // testPopulaDatabase deleta o banco de dados de testes, cria novamente e cria:
-// - 2 usuários
+// - 3 usuários, sendo o último sem transação
 // - 2 compras em dias diferentes, uma parada cada usuário
 // - 2 vendas em dias diferentes, uma para cada usuário
 // A venda do usuário 1 ocorre no mesmo dia que a compra do usuário 2.
@@ -171,7 +163,8 @@ func testPopulaDatabase() {
 		(email, senha, nome, nascimento)
 		VALUES
 			("valido1@gmail.com", "senhavalido1", "Conta Válida 1", "1994-03-07"),
-			("valido2@gmail.com", "senhavalido2", "Conta Válida 2", "1994-03-08");`
+			("valido2@gmail.com", "senhavalido2", "Conta Válida 2", "1994-03-08"),
+			("valido3@gmail.com", "senhavalido3", "Conta Válida 3", "1994-03-08");`
 	if _, err := db.Exec(sqlCode); err != nil {
 		log.Fatalf("%v", err)
 	}

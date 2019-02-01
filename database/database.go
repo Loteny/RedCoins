@@ -69,11 +69,6 @@ type config struct {
 
 // init lê o arquivo de configurações e configura o package corretamente
 func init() {
-	// O modo de testes já possui sua própria inicialização, portanto, não é
-	// necessário repetí-la
-	if flag.Lookup("test.v") != nil {
-		return
-	}
 	// Inicializa as configurações do módulo com o arquivo config.json
 	arquivoConfig, err := os.Open("./config.json")
 	if err != nil {
@@ -89,6 +84,13 @@ func init() {
 	testDbNome = c.Database.TestDbNome
 	enderecoDb = c.Database.EnderecoDb
 	dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + dbNome
+
+	// Inicialização em modo de testes, já que esse módulo é utilizado nos
+	// testes de outros módulos
+	if flag.Lookup("test.v") != nil {
+		dbNome = c.Database.TestDbNome
+		dsn = usuarioDb + ":" + senhaDb + "@tcp(" + enderecoDb + ")/" + testDbNome
+	}
 }
 
 // InsereUsuario cria uma nova linha na tabela 'usuario'. Retorna
