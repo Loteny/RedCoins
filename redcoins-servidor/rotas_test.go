@@ -138,6 +138,54 @@ func TestRotaVenda(t *testing.T) {
 	}
 }
 
+func TestRotaRelatorioDia(t *testing.T) {
+	// Verificaremos as transações do dia 2018-01-02
+	dados := map[string]string{"data": "2018-01-02"}
+	statusCode, body := testGetAuth(t, dados, RotaRelatorioDia, "valido1@gmail.com", "senhavalido1")
+	if statusCode != 200 {
+		t.Errorf("Status code inesperado: %v", statusCode)
+	}
+	if body != `{"transacoes":[`+
+		`{"usuario":"valido1@gmail.com","compra":true,"creditos":30,"bitcoins":0.003,"dia":"2018-01-02"},`+
+		`{"usuario":"valido2@gmail.com","compra":true,"creditos":40,"bitcoins":0.004,"dia":"2018-01-02"},`+
+		`{"usuario":"valido2@gmail.com","compra":false,"creditos":15,"bitcoins":0.0005,"dia":"2018-01-02"}]}` {
+		t.Errorf("Corpo da resposta inesperado: %v", body)
+	}
+
+	// Autenticação falha
+	statusCode, body = testGetAuth(t, dados, RotaRelatorioDia, "valido1@gmail.com", "senhaincorreta")
+	if statusCode != 403 {
+		t.Errorf("Status code inesperado: %v", statusCode)
+	}
+	if body != `` {
+		t.Errorf("Corpo da resposta inesperado: %v", body)
+	}
+}
+
+func TestRotaRelatorioUsuario(t *testing.T) {
+	// Verificaremos as transações do usuário valido1@gmail.com
+	dados := map[string]string{"email": "valido1@gmail.com"}
+	statusCode, body := testGetAuth(t, dados, RotaRelatorioUsuario, "valido1@gmail.com", "senhavalido1")
+	if statusCode != 200 {
+		t.Errorf("Status code inesperado: %v", statusCode)
+	}
+	if body != `{"transacoes":[`+
+		`{"usuario":"valido1@gmail.com","compra":true,"creditos":10,"bitcoins":0.001,"dia":"2018-01-01"},`+
+		`{"usuario":"valido1@gmail.com","compra":true,"creditos":20,"bitcoins":0.002,"dia":"2018-01-01"},`+
+		`{"usuario":"valido1@gmail.com","compra":true,"creditos":30,"bitcoins":0.003,"dia":"2018-01-02"}]}` {
+		t.Errorf("Corpo da resposta inesperado: %v", body)
+	}
+
+	// Autenticação falha
+	statusCode, body = testGetAuth(t, dados, RotaRelatorioUsuario, "valido1@gmail.com", "senhaincorreta")
+	if statusCode != 403 {
+		t.Errorf("Status code inesperado: %v", statusCode)
+	}
+	if body != `` {
+		t.Errorf("Corpo da resposta inesperado: %v", body)
+	}
+}
+
 // testPostSimples realiza um request HTTP POST que a função 'f' vai receber.
 // Retorna o status code e o corpo da mensagem de resposta.
 func testPostSimples(t *testing.T, form url.Values, f func(w http.ResponseWriter, r *http.Request)) (int, string) {
@@ -172,6 +220,38 @@ func testPostAuth(t *testing.T, form url.Values, f func(w http.ResponseWriter, r
 	}
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	request.SetBasicAuth(usuario, senha)
+
+	// Armazena a resposta da rota
+	recorder := httptest.NewRecorder()
+	handler := http.HandlerFunc(f)
+	handler.ServeHTTP(recorder, request)
+
+	result := recorder.Result()
+	statusCode := result.StatusCode
+	body, err := ioutil.ReadAll(result.Body)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	return statusCode, string(body)
+}
+
+// testGetAuth realiza um request HTTP GET que a função 'f' vai receber.
+// Retorna o status code e o corpo da mensagem de resposta. Utiliza HTTP Auth
+// Basic com os argumentos 'usuario' e 'senha'.
+func testGetAuth(t *testing.T, dados map[string]string,
+	f func(w http.ResponseWriter, r *http.Request),
+	usuario string, senha string) (int, string) {
+	request, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request.SetBasicAuth(usuario, senha)
+	q := request.URL.Query()
+	for k, v := range dados {
+		q.Add(k, v)
+	}
+	request.URL.RawQuery = q.Encode()
 
 	// Armazena a resposta da rota
 	recorder := httptest.NewRecorder()
