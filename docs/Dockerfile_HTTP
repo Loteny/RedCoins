@@ -1,0 +1,22 @@
+FROM golang
+
+# Dependências
+RUN go get github.com/go-sql-driver/mysql
+RUN go get golang.org/x/crypto/bcrypt
+
+ADD . /go/src/github.com/loteny/redcoins
+
+ENV REDCOINS_SV_ADDRHTTPS 0.0.0.0:443
+ENV REDCOINS_SV_ADDRHTTP 0.0.0.0:80
+ENV REDCOINS_SV_PEM ../src/github.com/loteny/redcoins/certs/server.pem
+ENV REDCOINS_SV_KEY ../src/github.com/loteny/redcoins/certs/server.key
+ENV REDCOINS_DB_USR root
+ENV REDCOINS_DB_SENHA tvMv2gjAcH5a
+ENV REDCOINS_DB_DBNOME redcoins
+ENV REDCOINS_DB_TESTEDBNOME redcoins_teste
+ENV REDCOINS_DB_DBADDR host.docker.internal:3306
+
+RUN go install github.com/loteny/redcoins/redcoins-servidor
+WORKDIR /go/bin
+ENTRYPOINT ["/go/bin/redcoins-servidor", "--sem-tls"]
+EXPOSE 80

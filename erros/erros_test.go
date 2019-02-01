@@ -9,13 +9,29 @@ import (
 )
 
 func TestCria(t *testing.T) {
-	msg := "mensagem de teste de erro"
+	// Cria um erro interno de status code 200 e mensagem determinada e verifica
+	// se o erro criado matém características
+	msg := make([]string, 1)
+	msg[0] = "mensagem de teste de erro"
 	original := Erros{interno: true, statusCode: 200, msg: msg}
-	gerado := Cria(true, 200, msg)
+	gerado := Cria(true, 200, msg[0])
 
-	if original != gerado {
+	if original.interno != gerado.interno ||
+		original.statusCode != gerado.statusCode ||
+		original.msg[0] != gerado.msg[0] {
 		t.Errorf("Estruturas diferentes.\nGerado: %#v\nOriginal: %#v",
 			gerado, original)
+	}
+}
+
+func TestCriaVazio(t *testing.T) {
+	// Verifica se a função cria um erro vazio correto (externo, statusCode 0 e
+	// sem mensagens)
+	e := CriaVazio()
+	if e.interno != false ||
+		len(e.msg) != 0 ||
+		e.statusCode != 0 {
+		t.Errorf("Erro vazio criado incorretamente: %v", e)
 	}
 }
 
@@ -23,6 +39,8 @@ func TestCriaInternoPadrao(t *testing.T) {
 	err := errors.New("mensagem de teste de erro")
 	gerado := CriaInternoPadrao(err)
 
+	// Verifica as características apropriadas de um erro interno padrão (mesma
+	// mensagem que a passada, flag de erro interno e status code 500)
 	if gerado.Error() != err.Error() {
 		t.Errorf("Mensagens de erros diferentes.\nGerado: %v\nOriginal: %v",
 			gerado, err)
@@ -37,8 +55,9 @@ func TestCriaInternoPadrao(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
+	// Verificação da implementação da interface 'error'
 	msg := "mensagem de teste de erro"
-	e := Erros{interno: true, statusCode: 200, msg: msg}
+	e := Cria(true, 500, msg)
 	msgRecebida := e.Error()
 
 	if msgRecebida != msg {
@@ -46,33 +65,68 @@ func TestError(t *testing.T) {
 	}
 }
 
-func TestAbreInterno(t *testing.T) {
+func TestAbre(t *testing.T) {
+	// Erro interno (com logging)
 	buf := testAbre(t, true)
 	if buf.String() == "" {
 		t.Errorf("Logging de erro incorreto. Log adquirido: %v", buf.String())
 	}
-}
-
-func TestAbreExterno(t *testing.T) {
-	buf := testAbre(t, false)
+	// Erro externo (sem logging)
+	buf = testAbre(t, false)
 	if buf.String() != "" {
 		t.Errorf("Logging não deveria ocorrer. Log adquirido: %v", buf.String())
 	}
-}
-
-func TestPadrao(t *testing.T) {
-	erroNormal := errors.New("mensagem de teste de erro")
-	e := Erros{interno: true, statusCode: 200, msg: erroNormal.Error()}
-	erroRecebido := e.Padrao()
-
-	if erroRecebido.Error() != erroNormal.Error() {
-		t.Logf("Esperado: %v\nObtido: %v", erroNormal, erroRecebido)
-		t.Fail()
+	// Erro que não é struct 'Erros' (com logging)
+	e := errors.New("erro teste")
+	interno, statusCode, err := Abre(e)
+	if e.Error() != err.Error() ||
+		interno != true ||
+		statusCode != 500 {
+		t.Errorf("Valores gerados inválidos: %v / %v / %v", interno, statusCode, err)
 	}
 }
 
-// testAbre é a função base para os testes da função Abre. Outras funções de
-// teste da função Abre podem derivar dessa função
+func TestJuntaErros(t *testing.T) {
+	// Testa união de dois erros não-internos
+	e1 := Cria(false, 500, "e1")
+	e2 := Cria(false, 500, "e2")
+	eResultado := JuntaErros(e1, e2)
+	if r := eResultado.Error(); r != `["e1","e2"]` {
+		t.Errorf("União de erros teve resultado incorreto: %v", r)
+	}
+	// Se um dos erros for interno, o resultado deve ser ele mesmo
+	e3 := Cria(true, 400, "e3")
+	eResultado = JuntaErros(e1, e3)
+	if r := eResultado.Error(); r != `e3` {
+		t.Errorf("União de erros teve resultado incorreto: %v", r)
+	}
+}
+
+func TestVazio(t *testing.T) {
+	// Erro vazio
+	e := CriaVazio()
+	if !Vazio(e) {
+		t.Errorf("Erro diz que não está vazio quando está.")
+	}
+	// Erro com item
+	e = JuntaErros(e, errors.New("erro 1"))
+	if Vazio(e) {
+		t.Errorf("Erro diz que está vazio quando não está.")
+	}
+}
+
+func TestLista(t *testing.T) {
+	e := Cria(false, 400, "err1")
+	e = JuntaErros(e, Cria(false, 400, "err2"))
+	lista := Lista(e)
+	if len(lista) != 2 || lista[0] != "err1" || lista[1] != "err2" {
+		t.Errorf("Valor incorreto da lista de erros: %v", lista)
+	}
+}
+
+// testAbre é a função base para os testes da função Abre. Essa função verifica
+// se a mensagem de erros está entrando no log corretamente e se os retornos da
+// função Abre (as características do erro) estão corretas.
 func testAbre(t *testing.T, interno bool) bytes.Buffer {
 	// Código para lermos o log de erros gerado pela função
 	var buf bytes.Buffer
@@ -80,11 +134,17 @@ func testAbre(t *testing.T, interno bool) bytes.Buffer {
 	defer func() { log.SetOutput(os.Stderr) }()
 
 	erroNormal := errors.New("mensagem de teste de erro")
-	e := Erros{interno: interno, statusCode: 200, msg: erroNormal.Error()}
-	internoRecebido, statusCode, erroRecebido := e.Abre()
+	e := Cria(interno, 200, erroNormal.Error())
+	internoRecebido, statusCode, erroRecebido := Abre(e)
 
-	if erroRecebido.Error() != erroNormal.Error() {
-		t.Errorf("Mensagem esperada: %v\nObtida: %v", erroNormal, erroRecebido)
+	if interno {
+		if erroRecebido.Error() != erroNormal.Error() {
+			t.Errorf("Mensagem esperada: %v\nObtida: %v", erroNormal, erroRecebido)
+		}
+	} else {
+		if erroRecebido.Error() != "[\""+erroNormal.Error()+"\"]" {
+			t.Errorf("Mensagem esperada: %v\nObtida: %v", erroNormal, erroRecebido)
+		}
 	}
 	if internoRecebido != interno {
 		t.Errorf("Valor de 'interno' incorreto (%v, deveria ser %v)",

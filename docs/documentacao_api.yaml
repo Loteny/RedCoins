@@ -1,0 +1,232 @@
+swagger: '2.0'
+info:
+  description: |
+    RedCoins é uma API para exchange de bitcoins.
+  version: 1.0.0
+  title: RedCoins
+  contact:
+    email: leoschsenna@gmail.com
+tags:
+- name: transações
+  description: Compra e venda de bitcoins
+- name: relatorios
+  description: Relatórios de compras e vendas de bitcoins
+- name: cadastro
+  description: Operações relacionadas aos cadastros de usuários
+paths:
+  /transacoes/compra:
+    post:
+      tags:
+      - transações
+      summary: Realiza uma compra de bitcoins
+      operationId: compra
+      consumes:
+      - application/x-www-form-urlencoded
+      produces:
+      - application/json
+      parameters:
+      - name: qtd
+        in: formData
+        description: Quantidade de bitcoins a ser comprada
+        required: true
+        type: number
+      - name: data
+        in: formData
+        description: Data da transação
+        required: true
+        type: string
+        format: YYYY-MM-DD
+      responses:
+        200:
+          description: Compra efetuada com sucesso
+        400:
+          description: Dados inválidos
+          schema:
+            $ref: '#/definitions/ErrosCompra'
+      security:
+      - basic_auth: []
+  /transacoes/venda:
+    post:
+      tags:
+      - transações
+      summary: Realiza uma venda de bitcoins
+      operationId: venda
+      consumes:
+      - application/x-www-form-urlencoded
+      produces:
+      - application/json
+      parameters:
+      - name: qtd
+        in: formData
+        description: Quantidade de bitcoins a ser vendida
+        required: true
+        type: number
+      - name: data
+        in: formData
+        description: Data da transação
+        required: true
+        type: string
+        format: YYYY-MM-DD
+      responses:
+        200:
+          description: Venda efetuada com sucesso
+        400:
+          description: Dados inválidos
+          schema:
+            $ref: '#/definitions/ErrosVenda'
+      security:
+      - basic_auth: []
+  /cadastro:
+    post:
+      tags:
+      - cadastro
+      summary: Realiza o cadastro de um usuário
+      operationId: cadastro
+      consumes:
+      - application/x-www-form-urlencoded
+      produces:
+      - application/json
+      parameters:
+      - name: email
+        in: formData
+        description: E-mail do usuário
+        required: true
+        type: string
+      - name: senha
+        in: formData
+        description: Senha do usuário (deve conter pelo menos 6 caracteres)
+        required: true
+        type: string
+      - name: nome
+        in: formData
+        description: Nome do usuário
+        required: true
+        type: string
+      - name: nascimento
+        in: formData
+        description: Data de nascimento do usuário
+        required: true
+        type: string
+        format: YYYY-MM-DD
+      responses:
+        200:
+          description: Cadastro realizado com sucesso
+        400:
+          description: Dados inválidos
+          schema:
+            $ref: '#/definitions/ErrosCadastro'
+  /relatorios/usuario:
+    get:
+      tags:
+      - relatorios
+      summary: Adquire as transações feitas por um usuário
+      operationId: relatorio_usuario
+      produces:
+      - application/json
+      parameters:
+      - name: email
+        in: query
+        description: E-mail do usuário
+        required: true
+        type: string
+      responses:
+        200:
+          description: Transações efetuadas
+          schema:
+            $ref: '#/definitions/Transacoes'
+      security:
+      - basic_auth: []
+  /relatorios/data:
+    get:
+      tags:
+      - relatorios
+      summary: Adquire as transações feitas em um determinado dia
+      operationId: relatorio_data
+      produces:
+      - application/json
+      parameters:
+      - name: data
+        in: query
+        description: Dia para visualizar as transações
+        required: true
+        type: string
+        format: YYYY-MM-DD
+      responses:
+        200:
+          description: Transações efetuadas
+          schema:
+            $ref: '#/definitions/Transacoes'
+      security:
+      - basic_auth: []
+securityDefinitions:
+  basic_auth:
+    type: basic
+definitions:
+  Transacoes:
+    type: object
+    properties:
+      transacoes:
+        type: array
+        description: Transações efetuadas
+        items:
+          type: object
+          properties:
+            usuario:
+              type: string
+              description: E-mail do usuário da transação
+            compra:
+              type: boolean
+              description: A transação foi uma compra (true para compra, false para venda)
+            creditos:
+              type: number
+              description: Dinheiro em BRL adquirido ou concedido na transação
+            bitcoins:
+              type: number
+              description: Bitcoins adquirdas ou concedidas na transação
+            dia:
+              type: string
+              format: YYYY-MM-DD
+              description: Data da transação
+  ErrosCompra:
+    type: object
+    properties:
+      erros:
+        type: array
+        description: Erro gerado
+        items:
+          type: string
+          enum:
+          - qtd_invalida
+          - data_invalida
+  ErrosVenda:
+    type: object
+    properties:
+      erros:
+        type: array
+        description: Erro gerado
+        items:
+          type: string
+          enum:
+          - qtd_invalida
+          - data_invalida
+          - saldo_insuficiente
+  ErrosCadastro:
+    type: object
+    properties:
+      erros:
+        type: array
+        description: Erro gerado
+        items:
+          type: string
+          enum:
+          - email_ja_cadastrado
+          - email_invalido
+          - senha_invalida
+          - senha_longa
+          - nome_invalido
+          - nascimento_invalido
+host: localhost
+basePath: /
+schemes:
+ - https
+ - http
